@@ -1,0 +1,32 @@
+-- Compiled proof, equivalent to #print DY.Example.SignedDH.client_auth
+theorem DY.Example.SignedDH.client_auth :
+∀ (client server : DY.Participant) (xPk yPk k : DY.Bytes) (time : Nat) (tr : DY.ExecTrace),
+  DY.Trace.Reachable DY.Example.SignedDH.reachability tr →
+    DY.Trace.EventLoggedAt (DY.Example.SignedDH.SignedDHEvent.ClientFinishEvent client server xPk yPk k) time tr →
+      have tr_before := DY.Trace.prefix tr time;
+      DY.Trace.EventLogged (DY.Example.SignedDH.SignedDHEvent.ServerFinishEvent server xPk yPk k) tr_before ∨
+        ∃ spk, DY.LongTermKeys.LongTermKeyCompromised "SignedDH PKI" server spk tr_before
+:=
+fun client server xPk yPk k time =>
+  DY.Trace.apply_Reachable_implies_Invariant fun tr h_trinv h_ev =>
+    have this :=
+      DY.Trace.EventLoggedAt_imp_EventInv (DY.Example.SignedDH.SignedDHEvent.ClientFinishEvent client server xPk yPk k)
+        time tr h_trinv h_ev;
+    DY.Example.SignedDH.client_auth._proof_1_1✝ client server xPk yPk k time tr
+      (Eq.mp
+        (congr
+          (congrArg Or
+            (congrFun'
+              (congrArg And
+                (congrArg (DY.Trace.EventLogged (DY.Example.SignedDH.SignedDHEvent.ServerFinishEvent server xPk yPk k))
+                  (DY.Trace.prefix_erase tr time)))
+              (k.Invariant (DY.Trace.prefix tr time) ∧
+                k.label (DY.Trace.prefix tr time) =
+                  (DY.Example.SignedDH.clientLabel client xPk).join (DY.Example.SignedDH.serverLabel server yPk))))
+          (congrArg Exists
+            (funext fun spk =>
+              congrArg
+                { isCorrupt := DY.LongTermKeys.LongTermKeyCompromised "SignedDH PKI" server spk,
+                    isCorruptLater := DY.LongTermKeys.label._proof_2 "SignedDH PKI" server spk }.isCorrupt
+                (DY.Trace.prefix_erase tr time))))
+        this)

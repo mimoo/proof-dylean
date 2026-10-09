@@ -1,0 +1,19 @@
+-- Compiled proof, equivalent to #print DY.Trace.Reachable_implies_Invariant
+theorem DY.Trace.Reachable_implies_Invariant :
+∀ [inst : DY.ExecTraceTypes] [inst_1 : DY.ProofTraceTypes] [inst_2 : DY.TraceInvariant] (config : DY.ReachabilityConfig)
+  [inst_3 : DY.ReachableImpliesInvariant config] (trExec : DY.ExecTrace),
+  DY.Trace.Reachable config trExec → ∃ trProof, DY.Trace.erase trProof = trExec ∧ DY.Trace.Invariant trProof
+:=
+fun [DY.ExecTraceTypes] [DY.ProofTraceTypes] [DY.TraceInvariant] config [DY.ReachableImpliesInvariant config] trExec
+    h_reach =>
+  DY.Trace.Reachable.rec (Exists.intro DY.Trace.nil ⟨Eq.refl DY.Trace.nil.erase, True.intro⟩)
+    (fun {tr} input a a_1 a_ih =>
+      Exists.casesOn a_ih fun trProofMid h =>
+        And.casesOn h fun left right =>
+          have h_wp :=
+            DY.HoareTriple.pf trProofMid (of_eq_true (Eq.trans (congrArg (config.PreCond input) left) (eq_true a)))
+              right;
+          Exists.casesOn h_wp fun trProofEnd h_wp =>
+            Exists.intro trProofEnd
+              (DY.Trace.Reachable_implies_Invariant._proof_1_2✝ config input trProofMid left trProofEnd h_wp))
+    h_reach

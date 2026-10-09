@@ -1,0 +1,25 @@
+-- Compiled proof, equivalent to #print DY.Fixpoint.mkLeastFixpoint_is_least
+theorem DY.Fixpoint.mkLeastFixpoint_is_least :
+∀ {α : Type u} (f : DY.Fixpoint.Set α → DY.Fixpoint.Set α),
+  DY.Fixpoint.IsMonotonic f →
+    ∀ (set : DY.Fixpoint.Set α), (∀ (x : α), f set x → set x) → ∀ (x : α), DY.Fixpoint.mkLeastFixpoint f x → set x
+:=
+fun {α} f x set =>
+  of_eq_true
+    (Eq.trans
+      (implies_congr_ctx (Eq.refl (∀ (x : α), f set x → set x)) fun a =>
+        Eq.trans
+          (forall_congr fun x =>
+            Eq.trans
+              (implies_congr_ctx (Eq.refl (∀ (s : DY.Fixpoint.Set α), (∀ (x : α), f s x → s x) → s x)) fun a_1 =>
+                (fun s a => eq_true (a_1 s a)) set
+                  (of_eq_true
+                    (Eq.trans
+                      (forall_congr fun x =>
+                        Eq.trans
+                          (implies_congr_ctx (Eq.refl (f set x)) fun a_2 => (fun x a_3 => eq_true (a x a_3)) x a_2)
+                          (implies_true (f set x)))
+                      (implies_true α))))
+              (implies_true (∀ (s : DY.Fixpoint.Set α), (∀ (x : α), f s x → s x) → s x)))
+          (implies_true α))
+      (implies_true (∀ (x : α), f set x → set x)))

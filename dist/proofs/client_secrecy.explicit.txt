@@ -1,0 +1,1893 @@
+-- set_option pp.all true in #print DY.Example.SignedDH.client_secrecy
+fun {time : Nat} (client server : DY.Participant)
+    (xPk yPk k : @DY.Bytes (@DY.Example.SignedDH.HasExecBytes.bytesFunc DY.Example.SignedDH.instHasExecBytes)) =>
+  @DY.Trace.apply_Reachable_implies_Invariant
+    (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+    (@DY.Example.SignedDH.HasProofTrace.traceProof DY.Example.SignedDH.instHasProofTrace)
+    (@DY.Example.SignedDH.HasTraceInvariant.traceInv DY.Example.SignedDH.instHasTraceInvariant)
+    (@DY.Example.SignedDH.reachability DY.Example.SignedDH.instHasExecTrace)
+    (@DY.Example.SignedDH.wfInst✝ DY.Example.SignedDH.instHasTraceInvariant)
+    (fun (trExec : @DY.ExecTrace (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)) =>
+      @DY.Bytes.AttackerKnows (@DY.Example.SignedDH.HasExecBytes.bytesFunc DY.Example.SignedDH.instHasExecBytes)
+          (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+          (@DY.Example.SignedDH.HasExecTrace.attBase DY.Example.SignedDH.instHasExecTrace)
+          (@DY.Example.SignedDH.HasExecBytes.att DY.Example.SignedDH.instHasExecBytes) k trExec →
+        @DY.Trace.EventLoggedAt (@DY.Example.SignedDH.SignedDHEvent DY.Example.SignedDH.instHasExecBytes)
+            (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+            (@DY.Example.SignedDH.HasExecTrace.traceExec2 DY.Example.SignedDH.instHasExecTrace)
+            (@DY.Example.SignedDH.SignedDHEvent.ClientFinishEvent DY.Example.SignedDH.instHasExecBytes client server xPk
+              yPk k)
+            time trExec →
+          let tr_before :
+            DY.Trace
+              (@DY.ExecTrace.Entry
+                (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)) :=
+            @DY.Trace.prefix
+              (@DY.ExecTrace.Entry (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace))
+              trExec time;
+          Or
+            (@Exists.{1} (@DY.Bytes (@DY.Example.SignedDH.HasExecBytes.bytesFunc DY.Example.SignedDH.instHasExecBytes))
+              fun
+                (spk : @DY.Bytes (@DY.Example.SignedDH.HasExecBytes.bytesFunc DY.Example.SignedDH.instHasExecBytes)) =>
+              @DY.LongTermKeys.LongTermKeyCompromised
+                (@DY.Example.SignedDH.HasExecBytes.bytesFunc DY.Example.SignedDH.instHasExecBytes) "SignedDH PKI"
+                (@DY.Signature.CanSign.vk.{0}
+                  (@DY.Bytes
+                    (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                      (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes DY.Example.SignedDH.instHasExecTrace)))
+                  (@DY.Signature.instCanSignBytes
+                    (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                      (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes DY.Example.SignedDH.instHasExecTrace))
+                    (@DY.Example.SignedDH.HasExecBytes.bytesFunc4
+                      (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes DY.Example.SignedDH.instHasExecTrace))))
+                (@DY.Example.SignedDH.instExecConfigVkBytes_examples DY.Example.SignedDH.instHasExecTrace)
+                (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+                (@DY.Example.SignedDH.HasExecTrace.traceExec6 DY.Example.SignedDH.instHasExecTrace) server spk
+                tr_before)
+            (Or
+              (@DY.Example.SignedDH.ClientEphemeralStateCompromised DY.Example.SignedDH.instHasExecTrace client xPk
+                trExec)
+              (@DY.Example.SignedDH.ServerEphemeralStateCompromised DY.Example.SignedDH.instHasExecTrace server yPk
+                trExec)))
+    fun
+      (tr :
+        @DY.ProofTrace (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+          (@DY.Example.SignedDH.HasProofTrace.traceProof DY.Example.SignedDH.instHasProofTrace))
+      (h_trinv :
+        @DY.Trace.Invariant (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+          (@DY.Example.SignedDH.HasProofTrace.traceProof DY.Example.SignedDH.instHasProofTrace)
+          (@DY.Example.SignedDH.HasTraceInvariant.traceInv DY.Example.SignedDH.instHasTraceInvariant) tr)
+      (h_pub :
+        @DY.Bytes.AttackerKnows (@DY.Example.SignedDH.HasExecBytes.bytesFunc DY.Example.SignedDH.instHasExecBytes)
+          (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+          (@DY.Example.SignedDH.HasExecTrace.attBase DY.Example.SignedDH.instHasExecTrace)
+          (@DY.Example.SignedDH.HasExecBytes.att DY.Example.SignedDH.instHasExecBytes) k
+          (@DY.Trace.erase (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+            (@DY.Example.SignedDH.HasProofTrace.traceProof DY.Example.SignedDH.instHasProofTrace) tr))
+      (h_ev :
+        @DY.Trace.EventLoggedAt (@DY.Example.SignedDH.SignedDHEvent DY.Example.SignedDH.instHasExecBytes)
+          (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+          (@DY.Example.SignedDH.HasExecTrace.traceExec2 DY.Example.SignedDH.instHasExecTrace)
+          (@DY.Example.SignedDH.SignedDHEvent.ClientFinishEvent DY.Example.SignedDH.instHasExecBytes client server xPk
+            yPk k)
+          time
+          (@DY.Trace.erase (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+            (@DY.Example.SignedDH.HasProofTrace.traceProof DY.Example.SignedDH.instHasProofTrace) tr)) =>
+    have this :
+      @DY.ProtocolEvent.EventInv.invariant
+        (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+        (@DY.Example.SignedDH.HasProofTrace.traceProof DY.Example.SignedDH.instHasProofTrace)
+        (@DY.Example.SignedDH.SignedDHEvent DY.Example.SignedDH.instHasExecBytes)
+        (@DY.Example.SignedDH.SignedDHEventInv DY.Example.SignedDH.instHasBytesInvariants)
+        (@DY.Trace.prefix
+          (@DY.ProofTrace.Entry (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+            (@DY.Example.SignedDH.HasProofTrace.traceProof DY.Example.SignedDH.instHasProofTrace))
+          tr time)
+        (@DY.Example.SignedDH.SignedDHEvent.ClientFinishEvent DY.Example.SignedDH.instHasExecBytes client server xPk yPk
+          k) :=
+      @DY.Trace.EventLoggedAt_imp_EventInv (@DY.Example.SignedDH.SignedDHEvent DY.Example.SignedDH.instHasExecBytes)
+        (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+        (@DY.Example.SignedDH.HasProofTrace.traceProof DY.Example.SignedDH.instHasProofTrace)
+        (@DY.Example.SignedDH.HasTraceInvariant.traceInv DY.Example.SignedDH.instHasTraceInvariant)
+        (@DY.Example.SignedDH.SignedDHEventInv DY.Example.SignedDH.instHasBytesInvariants)
+        (@DY.Example.SignedDH.HasExecTrace.traceExec2 DY.Example.SignedDH.instHasExecTrace)
+        (@DY.Example.SignedDH.HasProofTrace.traceProof2 DY.Example.SignedDH.instHasProofTrace)
+        (@DY.Example.SignedDH.HasTraceInvariant.traceInv2 DY.Example.SignedDH.instHasTraceInvariant)
+        (@DY.Example.SignedDH.SignedDHEvent.ClientFinishEvent DY.Example.SignedDH.instHasExecBytes client server xPk yPk
+          k)
+        time tr h_trinv h_ev;
+    @id.{0}
+      (let tr_before :
+        DY.Trace
+          (@DY.ExecTrace.Entry (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)) :=
+        @DY.Trace.prefix
+          (@DY.ExecTrace.Entry (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace))
+          (@DY.Trace.erase (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+            (@DY.Example.SignedDH.HasProofTrace.traceProof DY.Example.SignedDH.instHasProofTrace) tr)
+          time;
+      Or
+        (@Exists.{1} (@DY.Bytes (@DY.Example.SignedDH.HasExecBytes.bytesFunc DY.Example.SignedDH.instHasExecBytes))
+          fun (spk : @DY.Bytes (@DY.Example.SignedDH.HasExecBytes.bytesFunc DY.Example.SignedDH.instHasExecBytes)) =>
+          @DY.LongTermKeys.LongTermKeyCompromised
+            (@DY.Example.SignedDH.HasExecBytes.bytesFunc DY.Example.SignedDH.instHasExecBytes) "SignedDH PKI"
+            (@DY.Signature.CanSign.vk.{0}
+              (@DY.Bytes
+                (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                  (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes DY.Example.SignedDH.instHasExecTrace)))
+              (@DY.Signature.instCanSignBytes
+                (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                  (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes DY.Example.SignedDH.instHasExecTrace))
+                (@DY.Example.SignedDH.HasExecBytes.bytesFunc4
+                  (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes DY.Example.SignedDH.instHasExecTrace))))
+            (@DY.Example.SignedDH.instExecConfigVkBytes_examples DY.Example.SignedDH.instHasExecTrace)
+            (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+            (@DY.Example.SignedDH.HasExecTrace.traceExec6 DY.Example.SignedDH.instHasExecTrace) server spk tr_before)
+        (Or
+          (@DY.Example.SignedDH.ClientEphemeralStateCompromised DY.Example.SignedDH.instHasExecTrace client xPk
+            (@DY.Trace.erase (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+              (@DY.Example.SignedDH.HasProofTrace.traceProof DY.Example.SignedDH.instHasProofTrace) tr))
+          (@DY.Example.SignedDH.ServerEphemeralStateCompromised DY.Example.SignedDH.instHasExecTrace server yPk
+            (@DY.Trace.erase (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+              (@DY.Example.SignedDH.HasProofTrace.traceProof DY.Example.SignedDH.instHasProofTrace) tr))))
+      (@_private.Examples.SignedDH.SecurityTheorems.0.DY.Example.SignedDH.client_secrecy._proof_1_5 time client server
+        xPk yPk k tr h_trinv h_pub
+        (@id.{0}
+          (Or
+            (And
+              (@DY.Trace.EventLogged
+                (@DY.Example.SignedDH.SignedDHEvent
+                  (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                    (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                      (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                        DY.Example.SignedDH.instHasBytesInvariants))))
+                (@DY.Example.SignedDH.HasExecTrace.traceExec
+                  (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                    (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                      DY.Example.SignedDH.instHasBytesInvariants)))
+                (@DY.Example.SignedDH.HasExecTrace.traceExec2
+                  (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                    (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                      DY.Example.SignedDH.instHasBytesInvariants)))
+                (@DY.Example.SignedDH.SignedDHEvent.ServerFinishEvent
+                  (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                    (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                      (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                        DY.Example.SignedDH.instHasBytesInvariants)))
+                  server xPk yPk k)
+                (@DY.Trace.prefix
+                  (@DY.ExecTrace.Entry
+                    (@DY.Example.SignedDH.HasExecTrace.traceExec
+                      (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants))))
+                  (@DY.Trace.erase
+                    (@DY.Example.SignedDH.HasExecTrace.traceExec
+                      (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants)))
+                    (@DY.Example.SignedDH.HasProofTrace.traceProof
+                      (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                        DY.Example.SignedDH.instHasBytesInvariants))
+                    tr)
+                  time))
+              (And
+                (@DY.Bytes.Invariant
+                  (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                    (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                      (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants))))
+                  (@DY.Example.SignedDH.HasExecTrace.traceExec
+                    (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                      (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                        DY.Example.SignedDH.instHasBytesInvariants)))
+                  (@DY.Example.SignedDH.HasProofTrace.traceProof
+                    (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                      DY.Example.SignedDH.instHasBytesInvariants))
+                  (@DY.instBytesInvariantOfBytesInvariants
+                    (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                      (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants))))
+                    (@DY.Example.SignedDH.HasExecTrace.traceExec
+                      (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants)))
+                    (@DY.Example.SignedDH.HasProofTrace.traceProof
+                      (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                        DY.Example.SignedDH.instHasBytesInvariants))
+                    (@DY.Example.SignedDH.HasBytesInvariants.bytesInv DY.Example.SignedDH.instHasBytesInvariants))
+                  k
+                  (@DY.Trace.prefix
+                    (@DY.ProofTrace.Entry
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+                      (@DY.Example.SignedDH.HasProofTrace.traceProof DY.Example.SignedDH.instHasProofTrace))
+                    tr time))
+                (@Eq.{1}
+                  (@DY.Label
+                    (@DY.Example.SignedDH.HasExecTrace.traceExec
+                      (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants))))
+                  (@DY.Bytes.label
+                    (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                      (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants))))
+                    (@DY.Example.SignedDH.HasExecTrace.traceExec
+                      (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants)))
+                    (@DY.Example.SignedDH.HasProofTrace.traceProof
+                      (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                        DY.Example.SignedDH.instHasBytesInvariants))
+                    (@DY.instGetLabelOfBytesInvariants
+                      (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                        (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants))))
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      (@DY.Example.SignedDH.HasProofTrace.traceProof
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants))
+                      (@DY.Example.SignedDH.HasBytesInvariants.bytesInv DY.Example.SignedDH.instHasBytesInvariants))
+                    k
+                    (@DY.Trace.prefix
+                      (@DY.ProofTrace.Entry
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+                        (@DY.Example.SignedDH.HasProofTrace.traceProof DY.Example.SignedDH.instHasProofTrace))
+                      tr time))
+                  (@DY.Label.join
+                    (@DY.Example.SignedDH.HasExecTrace.traceExec
+                      (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants)))
+                    (@DY.Label.mk
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      (fun
+                          (tr :
+                            @DY.ExecTrace
+                              (@DY.Example.SignedDH.HasExecTrace.traceExec
+                                (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                                  (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                    DY.Example.SignedDH.instHasBytesInvariants)))) =>
+                        @DY.Example.SignedDH.ClientEphemeralStateCompromised
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants))
+                          client xPk tr)
+                      (@_private.Examples.SignedDH.Proof.0.DY.Example.SignedDH.clientLabel._proof_1
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants)
+                        client xPk))
+                    (@DY.Label.mk
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      (fun
+                          (tr :
+                            @DY.ExecTrace
+                              (@DY.Example.SignedDH.HasExecTrace.traceExec
+                                (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                                  (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                    DY.Example.SignedDH.instHasBytesInvariants)))) =>
+                        @DY.Example.SignedDH.ServerEphemeralStateCompromised
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants))
+                          server yPk tr)
+                      (@_private.Examples.SignedDH.Proof.0.DY.Example.SignedDH.serverLabel._proof_1
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants)
+                        server yPk))))))
+            (@Exists.{1}
+              (@DY.Bytes
+                (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                  (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                    (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                      (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                        DY.Example.SignedDH.instHasBytesInvariants)))))
+              fun
+                (spk :
+                  @DY.Bytes
+                    (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                      (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants))))) =>
+              @DY.LongTermKeys.LongTermKeyCompromised
+                (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                  (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                    (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                      (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                        DY.Example.SignedDH.instHasBytesInvariants))))
+                "SignedDH PKI"
+                (@DY.Signature.CanSign.vk.{0}
+                  (@DY.Bytes
+                    (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                      (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))))
+                  (@DY.Signature.instCanSignBytes
+                    (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                      (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants))))
+                    (@DY.Example.SignedDH.HasExecBytes.bytesFunc4
+                      (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants))))))
+                (@DY.Example.SignedDH.instExecConfigVkBytes_examples
+                  (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                    (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                      DY.Example.SignedDH.instHasBytesInvariants)))
+                (@DY.Example.SignedDH.HasExecTrace.traceExec
+                  (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                    (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                      DY.Example.SignedDH.instHasBytesInvariants)))
+                (@DY.Example.SignedDH.HasExecTrace.traceExec6
+                  (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                    (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                      DY.Example.SignedDH.instHasBytesInvariants)))
+                server spk
+                (@DY.Trace.prefix
+                  (@DY.ExecTrace.Entry
+                    (@DY.Example.SignedDH.HasExecTrace.traceExec
+                      (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants))))
+                  (@DY.Trace.erase
+                    (@DY.Example.SignedDH.HasExecTrace.traceExec
+                      (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants)))
+                    (@DY.Example.SignedDH.HasProofTrace.traceProof
+                      (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                        DY.Example.SignedDH.instHasBytesInvariants))
+                    tr)
+                  time)))
+          (@Eq.mp.{0}
+            (@DY.ProtocolEvent.EventInv.invariant
+              (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+              (@DY.Example.SignedDH.HasProofTrace.traceProof DY.Example.SignedDH.instHasProofTrace)
+              (@DY.Example.SignedDH.SignedDHEvent DY.Example.SignedDH.instHasExecBytes)
+              (@DY.Example.SignedDH.SignedDHEventInv DY.Example.SignedDH.instHasBytesInvariants)
+              (@DY.Trace.prefix
+                (@DY.ProofTrace.Entry (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+                  (@DY.Example.SignedDH.HasProofTrace.traceProof DY.Example.SignedDH.instHasProofTrace))
+                tr time)
+              (@DY.Example.SignedDH.SignedDHEvent.ClientFinishEvent DY.Example.SignedDH.instHasExecBytes client server
+                xPk yPk k))
+            (Or
+              (And
+                (@DY.Trace.EventLogged
+                  (@DY.Example.SignedDH.SignedDHEvent
+                    (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                      (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants))))
+                  (@DY.Example.SignedDH.HasExecTrace.traceExec
+                    (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                      (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                        DY.Example.SignedDH.instHasBytesInvariants)))
+                  (@DY.Example.SignedDH.HasExecTrace.traceExec2
+                    (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                      (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                        DY.Example.SignedDH.instHasBytesInvariants)))
+                  (@DY.Example.SignedDH.SignedDHEvent.ServerFinishEvent
+                    (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                      (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants)))
+                    server xPk yPk k)
+                  (@DY.Trace.prefix
+                    (@DY.ExecTrace.Entry
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants))))
+                    (@DY.Trace.erase
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      (@DY.Example.SignedDH.HasProofTrace.traceProof
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants))
+                      tr)
+                    time))
+                (And
+                  (@DY.Bytes.Invariant
+                    (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                      (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants))))
+                    (@DY.Example.SignedDH.HasExecTrace.traceExec
+                      (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants)))
+                    (@DY.Example.SignedDH.HasProofTrace.traceProof
+                      (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                        DY.Example.SignedDH.instHasBytesInvariants))
+                    (@DY.instBytesInvariantOfBytesInvariants
+                      (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                        (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants))))
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      (@DY.Example.SignedDH.HasProofTrace.traceProof
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants))
+                      (@DY.Example.SignedDH.HasBytesInvariants.bytesInv DY.Example.SignedDH.instHasBytesInvariants))
+                    k
+                    (@DY.Trace.prefix
+                      (@DY.ProofTrace.Entry
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+                        (@DY.Example.SignedDH.HasProofTrace.traceProof DY.Example.SignedDH.instHasProofTrace))
+                      tr time))
+                  (@Eq.{1}
+                    (@DY.Label
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants))))
+                    (@DY.Bytes.label
+                      (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                        (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants))))
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      (@DY.Example.SignedDH.HasProofTrace.traceProof
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants))
+                      (@DY.instGetLabelOfBytesInvariants
+                        (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                          (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants))))
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        (@DY.Example.SignedDH.HasProofTrace.traceProof
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants))
+                        (@DY.Example.SignedDH.HasBytesInvariants.bytesInv DY.Example.SignedDH.instHasBytesInvariants))
+                      k
+                      (@DY.Trace.prefix
+                        (@DY.ProofTrace.Entry
+                          (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+                          (@DY.Example.SignedDH.HasProofTrace.traceProof DY.Example.SignedDH.instHasProofTrace))
+                        tr time))
+                    (@DY.Label.join
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      (@DY.Example.SignedDH.clientLabel
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants)
+                        client xPk)
+                      (@DY.Example.SignedDH.serverLabel
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants)
+                        server yPk)))))
+              (@Exists.{1}
+                (@DY.Bytes
+                  (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                    (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                      (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants)))))
+                fun
+                  (spk :
+                    @DY.Bytes
+                      (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                        (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants))))) =>
+                @DY.Label.isCorrupt
+                  (@DY.Example.SignedDH.HasExecTrace.traceExec
+                    (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                      (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                        DY.Example.SignedDH.instHasBytesInvariants)))
+                  (@DY.LongTermKeys.label
+                    (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                      (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants))))
+                    "SignedDH PKI"
+                    (@DY.Signature.CanSign.vk.{0}
+                      (@DY.Bytes
+                        (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                          (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants)))))
+                      (@DY.Signature.instCanSignBytes
+                        (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                          (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants))))
+                        (@DY.Example.SignedDH.HasExecBytes.bytesFunc4
+                          (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants))))))
+                    (@DY.Example.SignedDH.instExecConfigVkBytes_examples
+                      (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants)))
+                    (@DY.Example.SignedDH.HasExecTrace.traceExec
+                      (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants)))
+                    (@DY.Example.SignedDH.HasExecTrace.traceExec6
+                      (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants)))
+                    server spk)
+                  (@DY.Trace.prefix
+                    (@DY.ExecTrace.Entry
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants))))
+                    (@DY.Trace.erase
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      (@DY.Example.SignedDH.HasProofTrace.traceProof
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants))
+                      tr)
+                    time)))
+            (@congr.{1, 1} Prop Prop
+              (Or
+                (And
+                  (@DY.Trace.EventLogged
+                    (@DY.Example.SignedDH.SignedDHEvent
+                      (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants))))
+                    (@DY.Example.SignedDH.HasExecTrace.traceExec
+                      (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants)))
+                    (@DY.Example.SignedDH.HasExecTrace.traceExec2
+                      (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants)))
+                    (@DY.Example.SignedDH.SignedDHEvent.ServerFinishEvent
+                      (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      server xPk yPk k)
+                    (@DY.Trace.erase
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      (@DY.Example.SignedDH.HasProofTrace.traceProof
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants))
+                      (@DY.Trace.prefix
+                        (@DY.ProofTrace.Entry
+                          (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+                          (@DY.Example.SignedDH.HasProofTrace.traceProof DY.Example.SignedDH.instHasProofTrace))
+                        tr time)))
+                  (And
+                    (@DY.Bytes.Invariant
+                      (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                        (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants))))
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      (@DY.Example.SignedDH.HasProofTrace.traceProof
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants))
+                      (@DY.instBytesInvariantOfBytesInvariants
+                        (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                          (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants))))
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        (@DY.Example.SignedDH.HasProofTrace.traceProof
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants))
+                        (@DY.Example.SignedDH.HasBytesInvariants.bytesInv DY.Example.SignedDH.instHasBytesInvariants))
+                      k
+                      (@DY.Trace.prefix
+                        (@DY.ProofTrace.Entry
+                          (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+                          (@DY.Example.SignedDH.HasProofTrace.traceProof DY.Example.SignedDH.instHasProofTrace))
+                        tr time))
+                    (@Eq.{1}
+                      (@DY.Label
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants))))
+                      (@DY.Bytes.label
+                        (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                          (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants))))
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        (@DY.Example.SignedDH.HasProofTrace.traceProof
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants))
+                        (@DY.instGetLabelOfBytesInvariants
+                          (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                            (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                              (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                                (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                  DY.Example.SignedDH.instHasBytesInvariants))))
+                          (@DY.Example.SignedDH.HasExecTrace.traceExec
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants)))
+                          (@DY.Example.SignedDH.HasProofTrace.traceProof
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants))
+                          (@DY.Example.SignedDH.HasBytesInvariants.bytesInv DY.Example.SignedDH.instHasBytesInvariants))
+                        k
+                        (@DY.Trace.prefix
+                          (@DY.ProofTrace.Entry
+                            (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+                            (@DY.Example.SignedDH.HasProofTrace.traceProof DY.Example.SignedDH.instHasProofTrace))
+                          tr time))
+                      (@DY.Label.join
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        (@DY.Example.SignedDH.clientLabel
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)
+                          client xPk)
+                        (@DY.Example.SignedDH.serverLabel
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)
+                          server yPk))))))
+              (Or
+                (And
+                  (@DY.Trace.EventLogged
+                    (@DY.Example.SignedDH.SignedDHEvent
+                      (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants))))
+                    (@DY.Example.SignedDH.HasExecTrace.traceExec
+                      (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants)))
+                    (@DY.Example.SignedDH.HasExecTrace.traceExec2
+                      (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants)))
+                    (@DY.Example.SignedDH.SignedDHEvent.ServerFinishEvent
+                      (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      server xPk yPk k)
+                    (@DY.Trace.prefix
+                      (@DY.ExecTrace.Entry
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants))))
+                      (@DY.Trace.erase
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        (@DY.Example.SignedDH.HasProofTrace.traceProof
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants))
+                        tr)
+                      time))
+                  (And
+                    (@DY.Bytes.Invariant
+                      (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                        (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants))))
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      (@DY.Example.SignedDH.HasProofTrace.traceProof
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants))
+                      (@DY.instBytesInvariantOfBytesInvariants
+                        (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                          (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants))))
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        (@DY.Example.SignedDH.HasProofTrace.traceProof
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants))
+                        (@DY.Example.SignedDH.HasBytesInvariants.bytesInv DY.Example.SignedDH.instHasBytesInvariants))
+                      k
+                      (@DY.Trace.prefix
+                        (@DY.ProofTrace.Entry
+                          (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+                          (@DY.Example.SignedDH.HasProofTrace.traceProof DY.Example.SignedDH.instHasProofTrace))
+                        tr time))
+                    (@Eq.{1}
+                      (@DY.Label
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants))))
+                      (@DY.Bytes.label
+                        (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                          (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants))))
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        (@DY.Example.SignedDH.HasProofTrace.traceProof
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants))
+                        (@DY.instGetLabelOfBytesInvariants
+                          (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                            (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                              (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                                (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                  DY.Example.SignedDH.instHasBytesInvariants))))
+                          (@DY.Example.SignedDH.HasExecTrace.traceExec
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants)))
+                          (@DY.Example.SignedDH.HasProofTrace.traceProof
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants))
+                          (@DY.Example.SignedDH.HasBytesInvariants.bytesInv DY.Example.SignedDH.instHasBytesInvariants))
+                        k
+                        (@DY.Trace.prefix
+                          (@DY.ProofTrace.Entry
+                            (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+                            (@DY.Example.SignedDH.HasProofTrace.traceProof DY.Example.SignedDH.instHasProofTrace))
+                          tr time))
+                      (@DY.Label.join
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        (@DY.Example.SignedDH.clientLabel
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)
+                          client xPk)
+                        (@DY.Example.SignedDH.serverLabel
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)
+                          server yPk))))))
+              (@Exists.{1}
+                (@DY.Bytes
+                  (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                    (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                      (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants)))))
+                fun
+                  (spk :
+                    @DY.Bytes
+                      (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                        (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants))))) =>
+                @DY.Label.isCorrupt
+                  (@DY.Example.SignedDH.HasExecTrace.traceExec
+                    (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                      (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                        DY.Example.SignedDH.instHasBytesInvariants)))
+                  (@DY.LongTermKeys.label
+                    (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                      (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants))))
+                    "SignedDH PKI"
+                    (@DY.Signature.CanSign.vk.{0}
+                      (@DY.Bytes
+                        (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                          (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants)))))
+                      (@DY.Signature.instCanSignBytes
+                        (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                          (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants))))
+                        (@DY.Example.SignedDH.HasExecBytes.bytesFunc4
+                          (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants))))))
+                    (@DY.Example.SignedDH.instExecConfigVkBytes_examples
+                      (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants)))
+                    (@DY.Example.SignedDH.HasExecTrace.traceExec
+                      (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants)))
+                    (@DY.Example.SignedDH.HasExecTrace.traceExec6
+                      (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants)))
+                    server spk)
+                  (@DY.Trace.erase
+                    (@DY.Example.SignedDH.HasExecTrace.traceExec
+                      (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants)))
+                    (@DY.Example.SignedDH.HasProofTrace.traceProof
+                      (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                        DY.Example.SignedDH.instHasBytesInvariants))
+                    (@DY.Trace.prefix
+                      (@DY.ProofTrace.Entry
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+                        (@DY.Example.SignedDH.HasProofTrace.traceProof DY.Example.SignedDH.instHasProofTrace))
+                      tr time)))
+              (@Exists.{1}
+                (@DY.Bytes
+                  (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                    (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                      (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants)))))
+                fun
+                  (spk :
+                    @DY.Bytes
+                      (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                        (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants))))) =>
+                @DY.Label.isCorrupt
+                  (@DY.Example.SignedDH.HasExecTrace.traceExec
+                    (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                      (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                        DY.Example.SignedDH.instHasBytesInvariants)))
+                  (@DY.LongTermKeys.label
+                    (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                      (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants))))
+                    "SignedDH PKI"
+                    (@DY.Signature.CanSign.vk.{0}
+                      (@DY.Bytes
+                        (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                          (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants)))))
+                      (@DY.Signature.instCanSignBytes
+                        (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                          (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants))))
+                        (@DY.Example.SignedDH.HasExecBytes.bytesFunc4
+                          (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants))))))
+                    (@DY.Example.SignedDH.instExecConfigVkBytes_examples
+                      (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants)))
+                    (@DY.Example.SignedDH.HasExecTrace.traceExec
+                      (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants)))
+                    (@DY.Example.SignedDH.HasExecTrace.traceExec6
+                      (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants)))
+                    server spk)
+                  (@DY.Trace.prefix
+                    (@DY.ExecTrace.Entry
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants))))
+                    (@DY.Trace.erase
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      (@DY.Example.SignedDH.HasProofTrace.traceProof
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants))
+                      tr)
+                    time))
+              (@congrArg.{1, 1} Prop ((b : Prop) → Prop)
+                (And
+                  (@DY.Trace.EventLogged
+                    (@DY.Example.SignedDH.SignedDHEvent
+                      (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants))))
+                    (@DY.Example.SignedDH.HasExecTrace.traceExec
+                      (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants)))
+                    (@DY.Example.SignedDH.HasExecTrace.traceExec2
+                      (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants)))
+                    (@DY.Example.SignedDH.SignedDHEvent.ServerFinishEvent
+                      (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      server xPk yPk k)
+                    (@DY.Trace.erase
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      (@DY.Example.SignedDH.HasProofTrace.traceProof
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants))
+                      (@DY.Trace.prefix
+                        (@DY.ProofTrace.Entry
+                          (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+                          (@DY.Example.SignedDH.HasProofTrace.traceProof DY.Example.SignedDH.instHasProofTrace))
+                        tr time)))
+                  (And
+                    (@DY.Bytes.Invariant
+                      (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                        (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants))))
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      (@DY.Example.SignedDH.HasProofTrace.traceProof
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants))
+                      (@DY.instBytesInvariantOfBytesInvariants
+                        (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                          (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants))))
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        (@DY.Example.SignedDH.HasProofTrace.traceProof
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants))
+                        (@DY.Example.SignedDH.HasBytesInvariants.bytesInv DY.Example.SignedDH.instHasBytesInvariants))
+                      k
+                      (@DY.Trace.prefix
+                        (@DY.ProofTrace.Entry
+                          (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+                          (@DY.Example.SignedDH.HasProofTrace.traceProof DY.Example.SignedDH.instHasProofTrace))
+                        tr time))
+                    (@Eq.{1}
+                      (@DY.Label
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants))))
+                      (@DY.Bytes.label
+                        (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                          (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants))))
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        (@DY.Example.SignedDH.HasProofTrace.traceProof
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants))
+                        (@DY.instGetLabelOfBytesInvariants
+                          (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                            (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                              (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                                (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                  DY.Example.SignedDH.instHasBytesInvariants))))
+                          (@DY.Example.SignedDH.HasExecTrace.traceExec
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants)))
+                          (@DY.Example.SignedDH.HasProofTrace.traceProof
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants))
+                          (@DY.Example.SignedDH.HasBytesInvariants.bytesInv DY.Example.SignedDH.instHasBytesInvariants))
+                        k
+                        (@DY.Trace.prefix
+                          (@DY.ProofTrace.Entry
+                            (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+                            (@DY.Example.SignedDH.HasProofTrace.traceProof DY.Example.SignedDH.instHasProofTrace))
+                          tr time))
+                      (@DY.Label.join
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        (@DY.Example.SignedDH.clientLabel
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)
+                          client xPk)
+                        (@DY.Example.SignedDH.serverLabel
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)
+                          server yPk)))))
+                (And
+                  (@DY.Trace.EventLogged
+                    (@DY.Example.SignedDH.SignedDHEvent
+                      (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants))))
+                    (@DY.Example.SignedDH.HasExecTrace.traceExec
+                      (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants)))
+                    (@DY.Example.SignedDH.HasExecTrace.traceExec2
+                      (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants)))
+                    (@DY.Example.SignedDH.SignedDHEvent.ServerFinishEvent
+                      (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      server xPk yPk k)
+                    (@DY.Trace.prefix
+                      (@DY.ExecTrace.Entry
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants))))
+                      (@DY.Trace.erase
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        (@DY.Example.SignedDH.HasProofTrace.traceProof
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants))
+                        tr)
+                      time))
+                  (And
+                    (@DY.Bytes.Invariant
+                      (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                        (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants))))
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      (@DY.Example.SignedDH.HasProofTrace.traceProof
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants))
+                      (@DY.instBytesInvariantOfBytesInvariants
+                        (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                          (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants))))
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        (@DY.Example.SignedDH.HasProofTrace.traceProof
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants))
+                        (@DY.Example.SignedDH.HasBytesInvariants.bytesInv DY.Example.SignedDH.instHasBytesInvariants))
+                      k
+                      (@DY.Trace.prefix
+                        (@DY.ProofTrace.Entry
+                          (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+                          (@DY.Example.SignedDH.HasProofTrace.traceProof DY.Example.SignedDH.instHasProofTrace))
+                        tr time))
+                    (@Eq.{1}
+                      (@DY.Label
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants))))
+                      (@DY.Bytes.label
+                        (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                          (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants))))
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        (@DY.Example.SignedDH.HasProofTrace.traceProof
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants))
+                        (@DY.instGetLabelOfBytesInvariants
+                          (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                            (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                              (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                                (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                  DY.Example.SignedDH.instHasBytesInvariants))))
+                          (@DY.Example.SignedDH.HasExecTrace.traceExec
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants)))
+                          (@DY.Example.SignedDH.HasProofTrace.traceProof
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants))
+                          (@DY.Example.SignedDH.HasBytesInvariants.bytesInv DY.Example.SignedDH.instHasBytesInvariants))
+                        k
+                        (@DY.Trace.prefix
+                          (@DY.ProofTrace.Entry
+                            (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+                            (@DY.Example.SignedDH.HasProofTrace.traceProof DY.Example.SignedDH.instHasProofTrace))
+                          tr time))
+                      (@DY.Label.join
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        (@DY.Example.SignedDH.clientLabel
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)
+                          client xPk)
+                        (@DY.Example.SignedDH.serverLabel
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)
+                          server yPk)))))
+                Or
+                (@congrFun'.{1, 1} Prop Prop
+                  (And
+                    (@DY.Trace.EventLogged
+                      (@DY.Example.SignedDH.SignedDHEvent
+                        (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants))))
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec2
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      (@DY.Example.SignedDH.SignedDHEvent.ServerFinishEvent
+                        (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        server xPk yPk k)
+                      (@DY.Trace.erase
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        (@DY.Example.SignedDH.HasProofTrace.traceProof
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants))
+                        (@DY.Trace.prefix
+                          (@DY.ProofTrace.Entry
+                            (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+                            (@DY.Example.SignedDH.HasProofTrace.traceProof DY.Example.SignedDH.instHasProofTrace))
+                          tr time))))
+                  (And
+                    (@DY.Trace.EventLogged
+                      (@DY.Example.SignedDH.SignedDHEvent
+                        (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants))))
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec2
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      (@DY.Example.SignedDH.SignedDHEvent.ServerFinishEvent
+                        (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        server xPk yPk k)
+                      (@DY.Trace.prefix
+                        (@DY.ExecTrace.Entry
+                          (@DY.Example.SignedDH.HasExecTrace.traceExec
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants))))
+                        (@DY.Trace.erase
+                          (@DY.Example.SignedDH.HasExecTrace.traceExec
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants)))
+                          (@DY.Example.SignedDH.HasProofTrace.traceProof
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants))
+                          tr)
+                        time)))
+                  (@congrArg.{1, 1} Prop ((b : Prop) → Prop)
+                    (@DY.Trace.EventLogged
+                      (@DY.Example.SignedDH.SignedDHEvent
+                        (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants))))
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec2
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      (@DY.Example.SignedDH.SignedDHEvent.ServerFinishEvent
+                        (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        server xPk yPk k)
+                      (@DY.Trace.erase
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        (@DY.Example.SignedDH.HasProofTrace.traceProof
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants))
+                        (@DY.Trace.prefix
+                          (@DY.ProofTrace.Entry
+                            (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+                            (@DY.Example.SignedDH.HasProofTrace.traceProof DY.Example.SignedDH.instHasProofTrace))
+                          tr time)))
+                    (@DY.Trace.EventLogged
+                      (@DY.Example.SignedDH.SignedDHEvent
+                        (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants))))
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec2
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      (@DY.Example.SignedDH.SignedDHEvent.ServerFinishEvent
+                        (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        server xPk yPk k)
+                      (@DY.Trace.prefix
+                        (@DY.ExecTrace.Entry
+                          (@DY.Example.SignedDH.HasExecTrace.traceExec
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants))))
+                        (@DY.Trace.erase
+                          (@DY.Example.SignedDH.HasExecTrace.traceExec
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants)))
+                          (@DY.Example.SignedDH.HasProofTrace.traceProof
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants))
+                          tr)
+                        time))
+                    And
+                    (@congrArg.{1, 1}
+                      (@DY.ExecTrace
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants))))
+                      Prop
+                      (@DY.Trace.erase
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        (@DY.Example.SignedDH.HasProofTrace.traceProof
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants))
+                        (@DY.Trace.prefix
+                          (@DY.ProofTrace.Entry
+                            (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+                            (@DY.Example.SignedDH.HasProofTrace.traceProof DY.Example.SignedDH.instHasProofTrace))
+                          tr time))
+                      (@DY.Trace.prefix
+                        (@DY.ExecTrace.Entry
+                          (@DY.Example.SignedDH.HasExecTrace.traceExec
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants))))
+                        (@DY.Trace.erase
+                          (@DY.Example.SignedDH.HasExecTrace.traceExec
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants)))
+                          (@DY.Example.SignedDH.HasProofTrace.traceProof
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants))
+                          tr)
+                        time)
+                      (@DY.Trace.EventLogged
+                        (@DY.Example.SignedDH.SignedDHEvent
+                          (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants))))
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec2
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        (@DY.Example.SignedDH.SignedDHEvent.ServerFinishEvent
+                          (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants)))
+                          server xPk yPk k))
+                      (@DY.Trace.prefix_erase
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        (@DY.Example.SignedDH.HasProofTrace.traceProof
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants))
+                        tr time)))
+                  (And
+                    (@DY.Bytes.Invariant
+                      (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                        (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants))))
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      (@DY.Example.SignedDH.HasProofTrace.traceProof
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants))
+                      (@DY.instBytesInvariantOfBytesInvariants
+                        (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                          (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants))))
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        (@DY.Example.SignedDH.HasProofTrace.traceProof
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants))
+                        (@DY.Example.SignedDH.HasBytesInvariants.bytesInv DY.Example.SignedDH.instHasBytesInvariants))
+                      k
+                      (@DY.Trace.prefix
+                        (@DY.ProofTrace.Entry
+                          (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+                          (@DY.Example.SignedDH.HasProofTrace.traceProof DY.Example.SignedDH.instHasProofTrace))
+                        tr time))
+                    (@Eq.{1}
+                      (@DY.Label
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants))))
+                      (@DY.Bytes.label
+                        (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                          (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants))))
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        (@DY.Example.SignedDH.HasProofTrace.traceProof
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants))
+                        (@DY.instGetLabelOfBytesInvariants
+                          (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                            (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                              (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                                (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                  DY.Example.SignedDH.instHasBytesInvariants))))
+                          (@DY.Example.SignedDH.HasExecTrace.traceExec
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants)))
+                          (@DY.Example.SignedDH.HasProofTrace.traceProof
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants))
+                          (@DY.Example.SignedDH.HasBytesInvariants.bytesInv DY.Example.SignedDH.instHasBytesInvariants))
+                        k
+                        (@DY.Trace.prefix
+                          (@DY.ProofTrace.Entry
+                            (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+                            (@DY.Example.SignedDH.HasProofTrace.traceProof DY.Example.SignedDH.instHasProofTrace))
+                          tr time))
+                      (@DY.Label.join
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        (@DY.Example.SignedDH.clientLabel
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)
+                          client xPk)
+                        (@DY.Example.SignedDH.serverLabel
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)
+                          server yPk))))))
+              (@congrArg.{1, 1}
+                ((spk :
+                    @DY.Bytes
+                      (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                        (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants))))) →
+                  Prop)
+                Prop
+                (fun
+                    (spk :
+                      @DY.Bytes
+                        (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                          (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants))))) =>
+                  @DY.Label.isCorrupt
+                    (@DY.Example.SignedDH.HasExecTrace.traceExec
+                      (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants)))
+                    (@DY.LongTermKeys.label
+                      (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                        (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants))))
+                      "SignedDH PKI"
+                      (@DY.Signature.CanSign.vk.{0}
+                        (@DY.Bytes
+                          (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                            (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                              (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                                (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                  DY.Example.SignedDH.instHasBytesInvariants)))))
+                        (@DY.Signature.instCanSignBytes
+                          (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                            (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                              (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                                (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                  DY.Example.SignedDH.instHasBytesInvariants))))
+                          (@DY.Example.SignedDH.HasExecBytes.bytesFunc4
+                            (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                              (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                                (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                  DY.Example.SignedDH.instHasBytesInvariants))))))
+                      (@DY.Example.SignedDH.instExecConfigVkBytes_examples
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec6
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      server spk)
+                    (@DY.Trace.erase
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      (@DY.Example.SignedDH.HasProofTrace.traceProof
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants))
+                      (@DY.Trace.prefix
+                        (@DY.ProofTrace.Entry
+                          (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+                          (@DY.Example.SignedDH.HasProofTrace.traceProof DY.Example.SignedDH.instHasProofTrace))
+                        tr time)))
+                (fun
+                    (spk :
+                      @DY.Bytes
+                        (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                          (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants))))) =>
+                  @DY.Label.isCorrupt
+                    (@DY.Example.SignedDH.HasExecTrace.traceExec
+                      (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants)))
+                    (@DY.LongTermKeys.label
+                      (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                        (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants))))
+                      "SignedDH PKI"
+                      (@DY.Signature.CanSign.vk.{0}
+                        (@DY.Bytes
+                          (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                            (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                              (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                                (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                  DY.Example.SignedDH.instHasBytesInvariants)))))
+                        (@DY.Signature.instCanSignBytes
+                          (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                            (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                              (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                                (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                  DY.Example.SignedDH.instHasBytesInvariants))))
+                          (@DY.Example.SignedDH.HasExecBytes.bytesFunc4
+                            (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                              (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                                (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                  DY.Example.SignedDH.instHasBytesInvariants))))))
+                      (@DY.Example.SignedDH.instExecConfigVkBytes_examples
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec6
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      server spk)
+                    (@DY.Trace.prefix
+                      (@DY.ExecTrace.Entry
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants))))
+                      (@DY.Trace.erase
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        (@DY.Example.SignedDH.HasProofTrace.traceProof
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants))
+                        tr)
+                      time))
+                (@Exists.{1}
+                  (@DY.Bytes
+                    (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                      (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants))))))
+                (@funext.{1, 1}
+                  (@DY.Bytes
+                    (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                      (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))))
+                  (fun
+                      (x :
+                        @DY.Bytes
+                          (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                            (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                              (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                                (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                  DY.Example.SignedDH.instHasBytesInvariants))))) =>
+                    Prop)
+                  (fun
+                      (x :
+                        @DY.Bytes
+                          (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                            (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                              (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                                (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                  DY.Example.SignedDH.instHasBytesInvariants))))) =>
+                    @DY.Label.isCorrupt
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      (@DY.LongTermKeys.label
+                        (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                          (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants))))
+                        "SignedDH PKI"
+                        (@DY.Signature.CanSign.vk.{0}
+                          (@DY.Bytes
+                            (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                              (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                                (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                                  (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                    DY.Example.SignedDH.instHasBytesInvariants)))))
+                          (@DY.Signature.instCanSignBytes
+                            (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                              (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                                (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                                  (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                    DY.Example.SignedDH.instHasBytesInvariants))))
+                            (@DY.Example.SignedDH.HasExecBytes.bytesFunc4
+                              (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                                (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                                  (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                    DY.Example.SignedDH.instHasBytesInvariants))))))
+                        (@DY.Example.SignedDH.instExecConfigVkBytes_examples
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec6
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        server x)
+                      (@DY.Trace.erase
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        (@DY.Example.SignedDH.HasProofTrace.traceProof
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants))
+                        (@DY.Trace.prefix
+                          (@DY.ProofTrace.Entry
+                            (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+                            (@DY.Example.SignedDH.HasProofTrace.traceProof DY.Example.SignedDH.instHasProofTrace))
+                          tr time)))
+                  (fun
+                      (x :
+                        @DY.Bytes
+                          (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                            (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                              (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                                (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                  DY.Example.SignedDH.instHasBytesInvariants))))) =>
+                    @DY.Label.isCorrupt
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      (@DY.LongTermKeys.label
+                        (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                          (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants))))
+                        "SignedDH PKI"
+                        (@DY.Signature.CanSign.vk.{0}
+                          (@DY.Bytes
+                            (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                              (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                                (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                                  (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                    DY.Example.SignedDH.instHasBytesInvariants)))))
+                          (@DY.Signature.instCanSignBytes
+                            (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                              (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                                (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                                  (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                    DY.Example.SignedDH.instHasBytesInvariants))))
+                            (@DY.Example.SignedDH.HasExecBytes.bytesFunc4
+                              (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                                (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                                  (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                    DY.Example.SignedDH.instHasBytesInvariants))))))
+                        (@DY.Example.SignedDH.instExecConfigVkBytes_examples
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec6
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        server x)
+                      (@DY.Trace.prefix
+                        (@DY.ExecTrace.Entry
+                          (@DY.Example.SignedDH.HasExecTrace.traceExec
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants))))
+                        (@DY.Trace.erase
+                          (@DY.Example.SignedDH.HasExecTrace.traceExec
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants)))
+                          (@DY.Example.SignedDH.HasProofTrace.traceProof
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants))
+                          tr)
+                        time))
+                  fun
+                    (spk :
+                      @DY.Bytes
+                        (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                          (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants))))) =>
+                  @congrArg.{1, 1}
+                    (@DY.ExecTrace
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants))))
+                    Prop
+                    (@DY.Trace.erase
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      (@DY.Example.SignedDH.HasProofTrace.traceProof
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants))
+                      (@DY.Trace.prefix
+                        (@DY.ProofTrace.Entry
+                          (@DY.Example.SignedDH.HasExecTrace.traceExec DY.Example.SignedDH.instHasExecTrace)
+                          (@DY.Example.SignedDH.HasProofTrace.traceProof DY.Example.SignedDH.instHasProofTrace))
+                        tr time))
+                    (@DY.Trace.prefix
+                      (@DY.ExecTrace.Entry
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants))))
+                      (@DY.Trace.erase
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        (@DY.Example.SignedDH.HasProofTrace.traceProof
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants))
+                        tr)
+                      time)
+                    (@DY.Label.isCorrupt
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      (@DY.LongTermKeys.label
+                        (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                          (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                            (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                              (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                DY.Example.SignedDH.instHasBytesInvariants))))
+                        "SignedDH PKI"
+                        (@DY.Signature.CanSign.vk.{0}
+                          (@DY.Bytes
+                            (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                              (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                                (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                                  (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                    DY.Example.SignedDH.instHasBytesInvariants)))))
+                          (@DY.Signature.instCanSignBytes
+                            (@DY.Example.SignedDH.HasExecBytes.bytesFunc
+                              (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                                (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                                  (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                    DY.Example.SignedDH.instHasBytesInvariants))))
+                            (@DY.Example.SignedDH.HasExecBytes.bytesFunc4
+                              (@DY.Example.SignedDH.HasExecTrace.toHasExecBytes
+                                (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                                  (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                                    DY.Example.SignedDH.instHasBytesInvariants))))))
+                        (@DY.Example.SignedDH.instExecConfigVkBytes_examples
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        (@DY.Example.SignedDH.HasExecTrace.traceExec6
+                          (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                            (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                              DY.Example.SignedDH.instHasBytesInvariants)))
+                        server spk))
+                    (@DY.Trace.prefix_erase
+                      (@DY.Example.SignedDH.HasExecTrace.traceExec
+                        (@DY.Example.SignedDH.HasProofTrace.toHasExecTrace
+                          (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                            DY.Example.SignedDH.instHasBytesInvariants)))
+                      (@DY.Example.SignedDH.HasProofTrace.traceProof
+                        (@DY.Example.SignedDH.HasBytesInvariants.toHasProofTrace
+                          DY.Example.SignedDH.instHasBytesInvariants))
+                      tr time))))
+            this)))

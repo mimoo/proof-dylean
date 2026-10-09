@@ -5,3 +5,5 @@
 
 /* Only the active workspace panel scrolls; navigation stays within the viewport. */
 .filebar,.contextbar,.statusbar{flex-shrink:0}
+
+.proof-explorer-link{font-size:12px;white-space:nowrap}@media(max-width:850px){.proof-explorer-link{display:none}}

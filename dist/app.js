@@ -7,6 +7,7 @@
   const files = Object.values(D.files), symbols = Object.values(D.symbols);
   let current, selected, tab = 'callers', mode = 'symbols', rawURL, searchTimer;
   let historyIndex = history.state?.dyIndex || 0, historyMax = historyIndex;
+  let routeGeneration = 0;
   const codeCache = new Map();
   const loadingFiles = new Map();
   function ensureFile(file) {
@@ -151,10 +152,12 @@
     return html;
   }
   function inferSymbol(file, line) {
-    return file.symbols.filter(id => !D.symbols[id].local).filter(id => {const s = D.symbols[id]; return s.span[0] <= line && s.span[2] >= line;})
+    return file.symbols.filter(id => !D.symbols[id].local && !D.symbols[id].proofOnly).filter(id => {const s = D.symbols[id]; return s.span[0] <= line && s.span[2] >= line;})
       .sort((a, b) => (D.symbols[a].span[2] - D.symbols[a].span[0]) - (D.symbols[b].span[2] - D.symbols[b].span[0]))[0];
   }
   function renderRoute(restore) {
+    const generation = ++routeGeneration, routeHash = location.hash;
+    const savedScroll = history.state?.scroll, savedLeft = history.state?.left;
     historyIndex = history.state?.dyIndex || 0;
     $('#back').disabled = historyIndex <= 0;
     $('#forward').disabled = historyIndex >= historyMax;
@@ -172,7 +175,7 @@
       $('#module-name').textContent = file.module;
       $('#code').innerHTML = '<p class="hint loading-source" role="status">Loading library source…</p>';
       setView('code');
-      ensureFile(file).then(() => {if (location.hash === requestedHash) renderRoute(restore);}).catch(() => {
+      ensureFile(file).then(() => {if (location.hash === requestedHash && generation === routeGeneration) renderRoute(restore);}).catch(() => {
         if (location.hash === requestedHash) $('#code').innerHTML = '<p class="hint loading-source">Unable to load this library file. <button id="retry-source">Retry</button></p>';
       });
       return;
@@ -201,8 +204,13 @@
     historyIndex = history.state?.dyIndex || 0;
     $('#back').disabled = historyIndex <= 0;
     $('#forward').disabled = historyIndex >= historyMax;
+    if (restore && savedScroll != null) {
+      $('#code').scrollTop = savedScroll;
+      $('#code').scrollLeft = savedLeft || 0;
+    }
     requestAnimationFrame(() => {
-      if (restore && history.state?.scroll != null) {$('#code').scrollTop = history.state.scroll; $('#code').scrollLeft = history.state.left || 0;}
+      if (generation !== routeGeneration || location.hash !== routeHash) return;
+      if (restore && savedScroll != null) {$('#code').scrollTop = savedScroll; $('#code').scrollLeft = savedLeft || 0;}
       else if (target) $('#code').scrollTop = target.offsetTop - $('#code').offsetTop - 70;
     });
     if (requested && !D.files[requested]) toast('File not found. Showing the trace module.');
@@ -220,7 +228,8 @@
       return;
     }
     const s = D.symbols[selected];
-    $('#symbol-heading').innerHTML = s ? `<span class="badge">${esc(s.kind)}</span><h2 class="symbol-name">${esc(s.name)}</h2><div class="symbol-location"><a href="${esc(symbolHref(selected))}">${esc(s.file)}:${s.range[0] + 1}</a><br>${s.uses.length} references · ${s.callers.length} callers</div>` : '<h2 class="symbol-name">Explore this file</h2><p class="hint">Tap a symbol in the code or choose one from the file outline.</p>';
+    const proofLink = s?.proof ? `<a class="item" href="proof.html#${esc(new URLSearchParams({proof:s.name}))}" target="_top">Open compiled proof tree ↗</a>` : '';
+    $('#symbol-heading').innerHTML = s ? `<span class="badge">${esc(s.kind)}</span><h2 class="symbol-name">${esc(s.name)}</h2><div class="symbol-location"><a href="${esc(symbolHref(selected))}">${esc(s.file)}:${s.range[0] + 1}</a><br>${s.uses.length} references · ${s.callers.length} callers</div>${proofLink}` : '<h2 class="symbol-name">Explore this file</h2><p class="hint">Tap a symbol in the code or choose one from the file outline.</p>';
     $$('.inspect-tabs button').forEach(b => {b.setAttribute('aria-selected', b.dataset.tab === tab); b.tabIndex = b.dataset.tab === tab ? 0 : -1;});
     const pane = $('#inspect-content');
     if (tab === 'imports') {

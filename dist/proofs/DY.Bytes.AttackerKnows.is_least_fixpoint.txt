@@ -1,0 +1,15 @@
+-- Compiled proof, equivalent to #print DY.Bytes.AttackerKnows.is_least_fixpoint
+theorem DY.Bytes.AttackerKnows.is_least_fixpoint :
+∀ [inst : DY.BytesFunctor] [inst_1 : DY.ExecTraceTypes] [inst_2 : DY.BaseAttackerKnowledge]
+  [inst_3 : DY.AttackerKnowledge] (pred : DY.Bytes → Prop) (b : DY.Bytes) (tr : DY.ExecTrace),
+  DY.AttackerKnowledge.attackerKnowledge.Implies pred →
+    (DY.Bytes.AttackerKnows.baseKnowledge tr).Implies pred → b.AttackerKnows tr → pred b
+:=
+fun [DY.BytesFunctor] [DY.ExecTraceTypes] [DY.BaseAttackerKnowledge] [DY.AttackerKnowledge] pred b tr pf1 pf2 =>
+  DY.Fixpoint.mkLeastFixpoint_is_least (DY.Bytes.AttackerKnows.attackerKnowledge✝ tr).pred
+    (DY.Bytes.AttackerKnows.attackerKnowledge✝ tr).pred_isMonotonic pred
+    (Eq.mpr (id (forall_congr fun x => implies_congr Fin.exists_fin_two._simp_1 (Eq.refl (pred x)))) fun b =>
+      have this := pf1 b;
+      have this_1 := pf2 b;
+      DY.Bytes.AttackerKnows.is_least_fixpoint._proof_1_3✝ pred tr b this this_1)
+    b

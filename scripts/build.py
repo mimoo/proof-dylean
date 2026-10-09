@@ -13,6 +13,10 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 
+def source_name(name):
+    return re.sub(r'^_private\..*?\.\d+\.', '', name).split('._@.', 1)[0]
+
+
 def utf16_slice(text, loc):
     lines = text.split('\n')
     a, b, c, d = loc[:4]
@@ -44,6 +48,13 @@ def build(source, output, skip_lean=False):
         indexes[rel] = data
     source_hash = hashlib.sha256(''.join(p + f['text'] for p, f in files.items()).encode()).hexdigest()
     toolchain = (source/'lean-toolchain').read_text().strip()
+    proof_extractor = ROOT/'scripts/ExportProofs.lean'
+    proof_key = hashlib.sha256((source_hash + toolchain + proof_extractor.read_text()).encode()).hexdigest()
+    proof_cache = ROOT/'.cache/proofs'/proof_key
+    if not (proof_cache/'proofs.json').exists():
+        print('Exporting compiled proof terms and their complete dependency closure…', flush=True)
+        subprocess.run(['lake', 'env', 'lean', '--run', str(proof_extractor), str(proof_cache)], cwd=source, check=True)
+    proofs = json.loads((proof_cache/'proofs.json').read_text())
     extractor = ROOT/'scripts/ExportReferences.lean'
     cache_key = hashlib.sha256((source_hash + toolchain + extractor.read_text()).encode()).hexdigest()
     cache = ROOT/'.cache/references'/cache_key
@@ -66,6 +77,20 @@ def build(source, output, skip_lean=False):
             indexes[path]['decls'].update(result['decls'])
     repo_modules = {f['module'] for f in files.values()}
     needed = {}
+    proof_only = set()
+    for decl in proofs['declarations']:
+        if decl['module'] and decl['module'] not in repo_modules:
+            needed.setdefault(decl['module'], set()).add(decl['name'])
+            # Include the source declarations enclosing synthetic proof helpers.
+            parent = source_name(decl['name'])
+            while parent:
+                needed[decl['module']].add(parent)
+                parent = parent.rsplit('.', 1)[0] if '.' in parent else ''
+        elif decl['module'] in repo_modules and decl['range']:
+            path = decl['module'].replace('.', '/') + '.lean'
+            if decl['name'] not in indexes[path]['decls']:
+                proof_only.add((decl['module'], decl['name']))
+            indexes[path]['decls'].setdefault(decl['name'], decl['range'])
     for data in indexes.values():
         for imported in data['directImports']:
             if imported[0] not in repo_modules:
@@ -86,6 +111,12 @@ def build(source, output, skip_lean=False):
         path = 'Library/' + relative.as_posix()
         files[path] = dict(path=path, module=module, text=src.read_text(), imports=[i[0] for i in data['directImports']], symbols=[], refs=[], external=True)
         indexes[path] = data
+    for decl in proofs['declarations']:
+        path = 'Library/' + (decl['module'] or '').replace('.', '/') + '.lean'
+        if path in indexes and decl['range']:
+            if decl['name'] not in indexes[path]['decls']:
+                proof_only.add((decl['module'], decl['name']))
+            indexes[path]['decls'].setdefault(decl['name'], decl['range'])
     modules = {f['module']: p for p, f in files.items()}
     symbols = {}
 
@@ -98,7 +129,7 @@ def build(source, output, skip_lean=False):
         kind_match = re.search(r'\b(theorem|def|abbrev|inductive|structure|class|instance|opaque|axiom|syntax|macro)\b', context)
         kind = 'local binding' if local else 'generated declaration' if loc[0] != loc[2] else kind_match[1] if full and kind_match else 'field / constructor'
         symbols[key] = dict(id=key, name=name, module=module, file=path, range=loc[:4], span=(full or loc)[:4], kind=kind, local=local,
-                            generated=('_aux_' in name or '_private.' in name), callers=[], callees=[], uses=[])
+                            generated=('_aux_' in name or '_private.' in name or (module, name) in proof_only), proofOnly=(module, name) in proof_only, callers=[], callees=[], uses=[])
         return key
 
     def wanted(module, name):
@@ -171,10 +202,55 @@ def build(source, output, skip_lean=False):
     data = dict(files=files, symbols=symbols, modules=modules, meta=dict(revision=revision, sourceHash=source_hash,
                 toolchain=toolchain, files=len(paths), libraryFiles=len(files)-len(paths), symbols=len(symbols), locals=sum(s['local'] for s in symbols.values()), edges=len(edges),
                 references=sum(len(s['uses']) for s in symbols.values())))
+    # Term constants link using compiler ranges, including generated proof helpers.
+    # For helpers without ranges, explicitly identify the enclosing source declaration.
+    by_name = {s['name']: s for s in symbols.values() if not s['local']}
+    enclosing = {}
+    for name, symbol in by_name.items():
+        enclosing.setdefault(source_name(name), []).append(symbol)
+    declarations = {}
+    for decl in proofs['declarations']:
+        name = decl['name']
+        target = by_name.get(name)
+        if target and decl['body'] is not None:
+            target['proof'] = True
+        source_kind = 'definition'
+        if not target:
+            parent = source_name(name)
+            _, marker, hygiene = name.partition('._@.')
+            while parent and not target:
+                matches = enclosing.get(parent, [])
+                # Never choose an arbitrary hygienic binding with the same name.
+                target = (by_name.get(parent + marker + hygiene) if marker else None) or by_name.get(parent)
+                if not target and len({(s['file'], tuple(s['range'])) for s in matches}) == 1:
+                    target = matches[0]
+                parent = parent.rsplit('.', 1)[0] if '.' in parent else ''
+            source_kind = 'enclosing declaration'
+        decl['source'] = dict(file=target['file'], line=target['range'][0]+1, symbol=target['id'], kind=source_kind) if target else None
+        decl.pop('range')
+        declarations[name] = decl
+    proofs['declarations'] = declarations
+    data['meta']['proofDeclarations'] = len(declarations)
+    data['meta']['proofNodes'] = len(proofs['nodes'])
     output.mkdir(parents=True, exist_ok=True)
     for asset in (ROOT/'web').iterdir():
         if asset.is_file():
             shutil.copy2(asset, output/asset.name)
+    proof_out = output/'proofs'
+    proof_out.mkdir(exist_ok=True)
+    for old in proof_out.glob('*.js'):
+        old.unlink()
+    # Small classic-script chunks keep expansion lazy and work via file:// too.
+    nodes = proofs.pop('nodes')
+    proofs['chunkSize'] = 2048
+    proofs['nodeCount'] = len(nodes)
+    proofs['meta'] = data['meta']
+    for start in range(0, len(nodes), proofs['chunkSize']):
+        chunk = start // proofs['chunkSize']
+        (proof_out/f'{chunk}.js').write_text('window.DYLEAN_PROOF_CHUNKS[' + str(chunk) + ']=' + json.dumps(nodes[start:start+proofs['chunkSize']], ensure_ascii=False, separators=(',', ':')) + ';\n')
+    for raw in proof_cache.glob('*.txt'):
+        shutil.copy2(raw, proof_out/raw.name)
+    (output/'proof-data.js').write_text('window.DYLEAN_PROOFS=' + json.dumps(proofs, ensure_ascii=False, separators=(',', ':')) + ';window.DYLEAN_PROOF_CHUNKS={};\n')
     # Library sources load on demand via classic scripts, including when opened via file://.
     (output/'library').mkdir(exist_ok=True)
     for path, f in files.items():

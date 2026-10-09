@@ -1,0 +1,13 @@
+-- Compiled proof, equivalent to #print DY.Bytes.AttackerKnows_implies_Publishable
+theorem DY.Bytes.AttackerKnows_implies_Publishable :
+∀ [inst : DY.BytesFunctor] [inst_1 : DY.ExecTraceTypes] [inst_2 : DY.ProofTraceTypes] [inst_3 : DY.TraceInvariant]
+  [inst_4 : DY.BytesInvariants] [DY.BytesInvariantsProofs] [inst_6 : DY.AttackerKnowledge]
+  [inst_7 : DY.BaseAttackerKnowledge] [inst_8 : DY.AttackerKnowledgeTheorem] [DY.BaseAttackerKnowledgeTheorem]
+  (b : DY.Bytes) (tr : DY.ProofTrace), DY.Trace.Invariant tr → b.AttackerKnows (DY.Trace.erase tr) → b.Publishable tr
+:=
+fun [DY.BytesFunctor] [DY.ExecTraceTypes] [DY.ProofTraceTypes] [DY.TraceInvariant] [DY.BytesInvariants]
+    [DY.BytesInvariantsProofs] [DY.AttackerKnowledge] [DY.BaseAttackerKnowledge] [DY.AttackerKnowledgeTheorem]
+    [DY.BaseAttackerKnowledgeTheorem] b tr h_tr =>
+  DY.Bytes.AttackerKnows.is_least_fixpoint (fun x => x.Publishable tr) b (DY.Trace.erase tr)
+    (fun b => DY.SubAttackerKnowledgeTheorem.pf b tr h_tr) fun b =>
+    id (DY.Trace.BaseAttackerKnows_implies_Publishable tr b h_tr)

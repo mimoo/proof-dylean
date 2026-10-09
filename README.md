@@ -1,4 +1,43 @@
-# Browsable DyLean
+# Proof DyLean
+
+A local fork of `../browsable-dylean` with an expandable viewer for **actual compiled Lean proof terms**.
+
+Open **[dist/proof.html](dist/proof.html)** directly, or visit `http://localhost:4174/proof.html` after running:
+
+```sh
+python3 -m http.server 4174 --bind 127.0.0.1 --directory dist
+```
+
+Start at Signed DH’s `client_secrecy`. The **Lean / Plain English** toggle switches between Lean proof-term previews and added explanations, preserving your expanded branches. Lean is the default. Names and types such as `client : DY.Participant` are shown openly at each `fun` step; there is no hidden binder box. “The statement we're proving” is the theorem’s proposition, while the pane on the right shows the source including its tactic script. Expand ▸ to inspect introductions, intermediate terms, lemma applications, and eliminators. Open referenced lemma bodies inline; every application argument remains available, including implicit/typeclass arguments in separate disclosures. Open Details on a term to see its lexical context and, when recoverable directly from its parent binder, its expected type. Click a named constant to navigate the source pane without closing the tree. Local variables jump to their introduction in the tree. The adjacent source browser has its own Back/Forward controls.
+
+The six reading-trail entries connect the secrecy statement to reachable-trace induction, attacker-knowledge closure, hash/DH components, and `Client.finish.spec`. These explanations are editorial guidance; the tree is generated from Lean expressions. A helper body is expanded with its own fresh parameters, rather than substituted/normalized into its caller. Constructors, recursors and axioms are explicitly marked as boundaries; repeated declarations on an expansion path stop cycles. The exporter includes the complete transitive **term and type** dependency closure of its seed declarations, including generated `simp`/`grind` proof helpers. Other declarations in the repository are still available in the source browser; they are not necessarily in this proof export.
+
+The initial snapshot has 9,529 declarations and 463,756 expression nodes. Nodes are deduplicated and loaded in 2,048-node classic-script chunks so the initial page does not download the whole graph. This works over HTTP and `file://`, with no backend or CDN. Source ranges come from Lean’s compiler, including library sources and an explicitly labelled enclosing-declaration fallback for helpers with no range. Generated proof anchors are not overlaid onto source identifiers.
+
+**Printed proof** downloads use Lean’s pretty printer with `pp.proofs true`, `pp.deepTerms true`, and a high `pp.maxSteps`. The fully explicit secrecy download additionally uses `pp.all true`. For comparison, you can print the theorem from Lean with:
+
+```lean
+import all Examples.SignedDH.SecurityTheorems
+set_option pp.proofs true in
+set_option pp.deepTerms true in
+set_option pp.maxSteps 100000000 in
+#print DY.Example.SignedDH.client_secrecy
+
+set_option pp.all true in
+set_option pp.maxSteps 100000000 in
+#print DY.Example.SignedDH.client_secrecy
+```
+
+`#print` may reference generated helper lemmas by name. This viewer also exports their bodies. The graph is a compiled proof certificate, not the chronology or failed branches of tactic search. Structural text previews have a display budget and mark omitted portions with `…`; the expandable graph retains every kernel expression child and every constant’s universe levels. Non-semantic expression metadata is discarded. This viewer does not re-check proofs in the browser: the build first checks the source with the pinned Lean toolchain and then reads compiled declarations.
+
+Why does the argument stop? DyLean defines attacker knowledge as a **least fixpoint**. Its theorem establishes that publishability is closed under every allowed attacker operation and includes the base knowledge. That single closure argument covers arbitrary chains of attacker operations. Reachable traces are handled by induction, and the protocol establishes invariants at each step. The proof does not recursively guess infinitely many possible ways a key was constructed.
+
+To regenerate both pages, run `python3 scripts/build.py` (or `npm run build`). The proof export is cached by source content, toolchain, and exporter version. `--skip-lean` still requires fresh compiler indexes. To change the starting proofs, edit `seeds` in `scripts/ExportProofs.lean`; the build discovers their dependencies and source files automatically. `dist/build-info.json` identifies the source snapshot. `npm test` checks graph closure, binder scope, source destinations, generated helper bodies, offline loading, UI expansion, local context, and source-browser navigation.
+
+The existing source browser remains at **[dist/index.html](dist/index.html)**. The original source-browser documentation follows.
+
+---
+
 
 A mobile-friendly, fully static browser for the Lean code in `../dylean`.
 
