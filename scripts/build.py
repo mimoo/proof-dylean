@@ -265,6 +265,13 @@ def build(source, output, skip_lean=False):
             f['asset'] = 'library/' + asset
             (output/f['asset']).write_text('Object.assign(window.DYLEAN_DATA.files[' + json.dumps(path) + '],' + json.dumps(dict(text=text, refs=refs), ensure_ascii=False, separators=(',', ':')) + ');\n')
     (output/'data.js').write_text('window.DYLEAN_DATA=' + json.dumps(data, ensure_ascii=False, separators=(',', ':')) + ';\n')
+    # The trace page: run the sanity-check scenarios in Lean (skipped with --skip-lean) and bundle with annotations.
+    import export_trace
+    if not skip_lean:
+        subprocess.run([sys.executable, str(ROOT/'scripts'/'export_trace.py'), '--source', str(source)], check=True)
+    else:
+        export_trace.bundle()
+    shutil.copytree(ROOT/'web'/'trace', output/'trace', dirs_exist_ok=True)
     # The proof toolkit page: every repository declaration with resolved references, plus the curated manifest.
     import toolkit
     _, missing = toolkit.write(output, data)

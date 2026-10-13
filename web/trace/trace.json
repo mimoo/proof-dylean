@@ -1,0 +1,2145 @@
+{
+ "scenarios": [
+  {
+   "succeeded": true,
+   "name": "honestAttacker",
+   "length": 15,
+   "entries": [
+    {
+     "kind": "random",
+     "i": 0,
+     "data": {
+      "length": 32
+     }
+    },
+    {
+     "kind": "message",
+     "i": 1,
+     "data": {
+      "msg": {
+       "t": "vk",
+       "sk": {
+        "timestamp": 0,
+        "t": "random",
+        "size": 32
+       }
+      }
+     }
+    },
+    {
+     "kind": "storeGlobal",
+     "i": 2,
+     "data": {
+      "stateType": "PublicKeyState \"SignedDH PKI\"",
+      "state": {
+       "pk": {
+        "t": "vk",
+        "sk": {
+         "timestamp": 0,
+         "t": "random",
+         "size": 32
+        }
+       },
+       "p": "Bob"
+      }
+     }
+    },
+    {
+     "kind": "store",
+     "i": 3,
+     "data": {
+      "stateType": "SecretKeyState \"SignedDH PKI\"",
+      "state": {
+       "sk": {
+        "timestamp": 0,
+        "t": "random",
+        "size": 32
+       },
+       "participant": "Bob"
+      }
+     }
+    },
+    {
+     "kind": "random",
+     "i": 4,
+     "data": {
+      "length": 32
+     }
+    },
+    {
+     "kind": "event",
+     "i": 5,
+     "data": {
+      "xPk": {
+       "t": "dhPk",
+       "sk": {
+        "timestamp": 4,
+        "t": "random",
+        "size": 32
+       }
+      },
+      "event": "ClientInitiateEvent",
+      "client": "Alice"
+     }
+    },
+    {
+     "kind": "store",
+     "i": 6,
+     "data": {
+      "stateType": "ClientInitiateState",
+      "state": {
+       "xSk": {
+        "timestamp": 4,
+        "t": "random",
+        "size": 32
+       },
+       "xPk": {
+        "t": "dhPk",
+        "sk": {
+         "timestamp": 4,
+         "t": "random",
+         "size": 32
+        }
+       },
+       "participant": "Alice"
+      }
+     }
+    },
+    {
+     "kind": "message",
+     "i": 7,
+     "data": {
+      "msg": {
+       "t": "dhPk",
+       "sk": {
+        "timestamp": 4,
+        "t": "random",
+        "size": 32
+       }
+      }
+     }
+    },
+    {
+     "kind": "random",
+     "i": 8,
+     "data": {
+      "length": 32
+     }
+    },
+    {
+     "kind": "random",
+     "i": 9,
+     "data": {
+      "length": 32
+     }
+    },
+    {
+     "kind": "event",
+     "i": 10,
+     "data": {
+      "yPk": {
+       "t": "dhPk",
+       "sk": {
+        "timestamp": 8,
+        "t": "random",
+        "size": 32
+       }
+      },
+      "xPk": {
+       "t": "dhPk",
+       "sk": {
+        "timestamp": 4,
+        "t": "random",
+        "size": 32
+       }
+      },
+      "server": "Bob",
+      "kS": {
+       "t": "hash",
+       "input": {
+        "t": "dh",
+        "sk": {
+         "timestamp": 4,
+         "t": "random",
+         "size": 32
+        },
+        "pk": {
+         "t": "dhPk",
+         "sk": {
+          "timestamp": 8,
+          "t": "random",
+          "size": 32
+         }
+        }
+       }
+      },
+      "event": "ServerFinishEvent"
+     }
+    },
+    {
+     "kind": "store",
+     "i": 11,
+     "data": {
+      "stateType": "ServerFinishState",
+      "state": {
+       "yPk": {
+        "t": "dhPk",
+        "sk": {
+         "timestamp": 8,
+         "t": "random",
+         "size": 32
+        }
+       },
+       "participant": "Bob",
+       "kS": {
+        "t": "hash",
+        "input": {
+         "t": "dh",
+         "sk": {
+          "timestamp": 4,
+          "t": "random",
+          "size": 32
+         },
+         "pk": {
+          "t": "dhPk",
+          "sk": {
+           "timestamp": 8,
+           "t": "random",
+           "size": 32
+          }
+         }
+        }
+       }
+      }
+     }
+    },
+    {
+     "kind": "message",
+     "i": 12,
+     "data": {
+      "msg": {
+       "t": "concat",
+       "rhs": {
+        "t": "concat",
+        "rhs": {
+         "t": "concat",
+         "rhs": {
+          "t": "concat",
+          "rhs": {
+           "t": "concat",
+           "rhs": {
+            "t": "concat",
+            "rhs": {
+             "t": "concat",
+             "rhs": {
+              "t": "concat",
+              "rhs": {
+               "t": "concat",
+               "rhs": {
+                "t": "concat",
+                "rhs": {
+                 "t": "concat",
+                 "rhs": {
+                  "t": "concat",
+                  "rhs": {
+                   "t": "concat",
+                   "rhs": {
+                    "t": "concat",
+                    "rhs": {
+                     "t": "concat",
+                     "rhs": {
+                      "t": "concat",
+                      "rhs": {
+                       "t": "concat",
+                       "rhs": {
+                        "t": "concat",
+                        "rhs": {
+                         "t": "concat",
+                         "rhs": {
+                          "t": "concat",
+                          "rhs": {
+                           "t": "concat",
+                           "rhs": {
+                            "t": "concat",
+                            "rhs": {
+                             "t": "concat",
+                             "rhs": {
+                              "t": "concat",
+                              "rhs": {
+                               "t": "concat",
+                               "rhs": {
+                                "t": "concat",
+                                "rhs": {
+                                 "t": "concat",
+                                 "rhs": {
+                                  "t": "concat",
+                                  "rhs": {
+                                   "t": "concat",
+                                   "rhs": {
+                                    "t": "concat",
+                                    "rhs": {
+                                     "t": "concat",
+                                     "rhs": {
+                                      "t": "concat",
+                                      "rhs": {
+                                       "t": "concat",
+                                       "rhs": {
+                                        "t": "concat",
+                                        "rhs": {
+                                         "t": "sign",
+                                         "sk": {
+                                          "timestamp": 0,
+                                          "t": "random",
+                                          "size": 32
+                                         },
+                                         "nonce": {
+                                          "timestamp": 9,
+                                          "t": "random",
+                                          "size": 32
+                                         },
+                                         "msg": {
+                                          "t": "concat",
+                                          "rhs": {
+                                           "t": "concat",
+                                           "rhs": {
+                                            "t": "concat",
+                                            "rhs": {
+                                             "t": "concat",
+                                             "rhs": {
+                                              "t": "concat",
+                                              "rhs": {
+                                               "t": "concat",
+                                               "rhs": {
+                                                "t": "concat",
+                                                "rhs": {
+                                                 "t": "concat",
+                                                 "rhs": {
+                                                  "t": "concat",
+                                                  "rhs": {
+                                                   "t": "concat",
+                                                   "rhs": {
+                                                    "t": "concat",
+                                                    "rhs": {
+                                                     "t": "concat",
+                                                     "rhs": {
+                                                      "t": "concat",
+                                                      "rhs": {
+                                                       "t": "concat",
+                                                       "rhs": {
+                                                        "t": "concat",
+                                                        "rhs": {
+                                                         "t": "concat",
+                                                         "rhs": {
+                                                          "t": "concat",
+                                                          "rhs": {
+                                                           "t": "concat",
+                                                           "rhs": {
+                                                            "t": "concat",
+                                                            "rhs": {
+                                                             "t": "concat",
+                                                             "rhs": {
+                                                              "t": "concat",
+                                                              "rhs": {
+                                                               "t": "concat",
+                                                               "rhs": {
+                                                                "t": "concat",
+                                                                "rhs": {
+                                                                 "t": "concat",
+                                                                 "rhs": {
+                                                                  "t": "concat",
+                                                                  "rhs": {
+                                                                   "t": "concat",
+                                                                   "rhs": {
+                                                                    "t": "concat",
+                                                                    "rhs": {
+                                                                     "t": "concat",
+                                                                     "rhs": {
+                                                                      "t": "concat",
+                                                                      "rhs": {
+                                                                       "t": "concat",
+                                                                       "rhs": {
+                                                                        "t": "concat",
+                                                                        "rhs": {
+                                                                         "t": "concat",
+                                                                         "rhs": {
+                                                                          "t": "concat",
+                                                                          "rhs": {
+                                                                           "t": "concat",
+                                                                           "rhs": {
+                                                                            "t": "dhPk",
+                                                                            "sk": {
+                                                                             "timestamp": 8,
+                                                                             "t": "random",
+                                                                             "size": 32
+                                                                            }
+                                                                           },
+                                                                           "lhs": {
+                                                                            "t": "dhPk",
+                                                                            "sk": {
+                                                                             "timestamp": 4,
+                                                                             "t": "random",
+                                                                             "size": 32
+                                                                            }
+                                                                           }
+                                                                          },
+                                                                          "lhs": {
+                                                                           "t": "literal",
+                                                                           "length": 1,
+                                                                           "hex": "00"
+                                                                          }
+                                                                         },
+                                                                         "lhs": {
+                                                                          "t": "literal",
+                                                                          "length": 1,
+                                                                          "hex": "01"
+                                                                         }
+                                                                        },
+                                                                        "lhs": {
+                                                                         "t": "literal",
+                                                                         "length": 1,
+                                                                         "hex": "01"
+                                                                        }
+                                                                       },
+                                                                       "lhs": {
+                                                                        "t": "literal",
+                                                                        "length": 1,
+                                                                        "hex": "01"
+                                                                       }
+                                                                      },
+                                                                      "lhs": {
+                                                                       "t": "literal",
+                                                                       "length": 1,
+                                                                       "hex": "01"
+                                                                      }
+                                                                     },
+                                                                     "lhs": {
+                                                                      "t": "literal",
+                                                                      "length": 1,
+                                                                      "hex": "01"
+                                                                     }
+                                                                    },
+                                                                    "lhs": {
+                                                                     "t": "literal",
+                                                                     "length": 1,
+                                                                     "hex": "01"
+                                                                    }
+                                                                   },
+                                                                   "lhs": {
+                                                                    "t": "literal",
+                                                                    "length": 1,
+                                                                    "hex": "01"
+                                                                   }
+                                                                  },
+                                                                  "lhs": {
+                                                                   "t": "literal",
+                                                                   "length": 1,
+                                                                   "hex": "01"
+                                                                  }
+                                                                 },
+                                                                 "lhs": {
+                                                                  "t": "literal",
+                                                                  "length": 1,
+                                                                  "hex": "01"
+                                                                 }
+                                                                },
+                                                                "lhs": {
+                                                                 "t": "literal",
+                                                                 "length": 1,
+                                                                 "hex": "01"
+                                                                }
+                                                               },
+                                                               "lhs": {
+                                                                "t": "literal",
+                                                                "length": 1,
+                                                                "hex": "01"
+                                                               }
+                                                              },
+                                                              "lhs": {
+                                                               "t": "literal",
+                                                               "length": 1,
+                                                               "hex": "01"
+                                                              }
+                                                             },
+                                                             "lhs": {
+                                                              "t": "literal",
+                                                              "length": 1,
+                                                              "hex": "01"
+                                                             }
+                                                            },
+                                                            "lhs": {
+                                                             "t": "literal",
+                                                             "length": 1,
+                                                             "hex": "01"
+                                                            }
+                                                           },
+                                                           "lhs": {
+                                                            "t": "literal",
+                                                            "length": 1,
+                                                            "hex": "01"
+                                                           }
+                                                          },
+                                                          "lhs": {
+                                                           "t": "literal",
+                                                           "length": 1,
+                                                           "hex": "01"
+                                                          }
+                                                         },
+                                                         "lhs": {
+                                                          "t": "literal",
+                                                          "length": 1,
+                                                          "hex": "01"
+                                                         }
+                                                        },
+                                                        "lhs": {
+                                                         "t": "literal",
+                                                         "length": 1,
+                                                         "hex": "01"
+                                                        }
+                                                       },
+                                                       "lhs": {
+                                                        "t": "literal",
+                                                        "length": 1,
+                                                        "hex": "01"
+                                                       }
+                                                      },
+                                                      "lhs": {
+                                                       "t": "literal",
+                                                       "length": 1,
+                                                       "hex": "01"
+                                                      }
+                                                     },
+                                                     "lhs": {
+                                                      "t": "literal",
+                                                      "length": 1,
+                                                      "hex": "01"
+                                                     }
+                                                    },
+                                                    "lhs": {
+                                                     "t": "literal",
+                                                     "length": 1,
+                                                     "hex": "01"
+                                                    }
+                                                   },
+                                                   "lhs": {
+                                                    "t": "literal",
+                                                    "length": 1,
+                                                    "hex": "01"
+                                                   }
+                                                  },
+                                                  "lhs": {
+                                                   "t": "literal",
+                                                   "length": 1,
+                                                   "hex": "01"
+                                                  }
+                                                 },
+                                                 "lhs": {
+                                                  "t": "literal",
+                                                  "length": 1,
+                                                  "hex": "01"
+                                                 }
+                                                },
+                                                "lhs": {
+                                                 "t": "literal",
+                                                 "length": 1,
+                                                 "hex": "01"
+                                                }
+                                               },
+                                               "lhs": {
+                                                "t": "literal",
+                                                "length": 1,
+                                                "hex": "01"
+                                               }
+                                              },
+                                              "lhs": {
+                                               "t": "literal",
+                                               "length": 1,
+                                               "hex": "01"
+                                              }
+                                             },
+                                             "lhs": {
+                                              "t": "literal",
+                                              "length": 1,
+                                              "hex": "01"
+                                             }
+                                            },
+                                            "lhs": {
+                                             "t": "literal",
+                                             "length": 1,
+                                             "hex": "01"
+                                            }
+                                           },
+                                           "lhs": {
+                                            "t": "literal",
+                                            "length": 1,
+                                            "hex": "01"
+                                           }
+                                          },
+                                          "lhs": {
+                                           "t": "literal",
+                                           "length": 1,
+                                           "hex": "01"
+                                          }
+                                         }
+                                        },
+                                        "lhs": {
+                                         "t": "dhPk",
+                                         "sk": {
+                                          "timestamp": 8,
+                                          "t": "random",
+                                          "size": 32
+                                         }
+                                        }
+                                       },
+                                       "lhs": {
+                                        "t": "literal",
+                                        "length": 1,
+                                        "hex": "00"
+                                       }
+                                      },
+                                      "lhs": {
+                                       "t": "literal",
+                                       "length": 1,
+                                       "hex": "01"
+                                      }
+                                     },
+                                     "lhs": {
+                                      "t": "literal",
+                                      "length": 1,
+                                      "hex": "01"
+                                     }
+                                    },
+                                    "lhs": {
+                                     "t": "literal",
+                                     "length": 1,
+                                     "hex": "01"
+                                    }
+                                   },
+                                   "lhs": {
+                                    "t": "literal",
+                                    "length": 1,
+                                    "hex": "01"
+                                   }
+                                  },
+                                  "lhs": {
+                                   "t": "literal",
+                                   "length": 1,
+                                   "hex": "01"
+                                  }
+                                 },
+                                 "lhs": {
+                                  "t": "literal",
+                                  "length": 1,
+                                  "hex": "01"
+                                 }
+                                },
+                                "lhs": {
+                                 "t": "literal",
+                                 "length": 1,
+                                 "hex": "01"
+                                }
+                               },
+                               "lhs": {
+                                "t": "literal",
+                                "length": 1,
+                                "hex": "01"
+                               }
+                              },
+                              "lhs": {
+                               "t": "literal",
+                               "length": 1,
+                               "hex": "01"
+                              }
+                             },
+                             "lhs": {
+                              "t": "literal",
+                              "length": 1,
+                              "hex": "01"
+                             }
+                            },
+                            "lhs": {
+                             "t": "literal",
+                             "length": 1,
+                             "hex": "01"
+                            }
+                           },
+                           "lhs": {
+                            "t": "literal",
+                            "length": 1,
+                            "hex": "01"
+                           }
+                          },
+                          "lhs": {
+                           "t": "literal",
+                           "length": 1,
+                           "hex": "01"
+                          }
+                         },
+                         "lhs": {
+                          "t": "literal",
+                          "length": 1,
+                          "hex": "01"
+                         }
+                        },
+                        "lhs": {
+                         "t": "literal",
+                         "length": 1,
+                         "hex": "01"
+                        }
+                       },
+                       "lhs": {
+                        "t": "literal",
+                        "length": 1,
+                        "hex": "01"
+                       }
+                      },
+                      "lhs": {
+                       "t": "literal",
+                       "length": 1,
+                       "hex": "01"
+                      }
+                     },
+                     "lhs": {
+                      "t": "literal",
+                      "length": 1,
+                      "hex": "01"
+                     }
+                    },
+                    "lhs": {
+                     "t": "literal",
+                     "length": 1,
+                     "hex": "01"
+                    }
+                   },
+                   "lhs": {
+                    "t": "literal",
+                    "length": 1,
+                    "hex": "01"
+                   }
+                  },
+                  "lhs": {
+                   "t": "literal",
+                   "length": 1,
+                   "hex": "01"
+                  }
+                 },
+                 "lhs": {
+                  "t": "literal",
+                  "length": 1,
+                  "hex": "01"
+                 }
+                },
+                "lhs": {
+                 "t": "literal",
+                 "length": 1,
+                 "hex": "01"
+                }
+               },
+               "lhs": {
+                "t": "literal",
+                "length": 1,
+                "hex": "01"
+               }
+              },
+              "lhs": {
+               "t": "literal",
+               "length": 1,
+               "hex": "01"
+              }
+             },
+             "lhs": {
+              "t": "literal",
+              "length": 1,
+              "hex": "01"
+             }
+            },
+            "lhs": {
+             "t": "literal",
+             "length": 1,
+             "hex": "01"
+            }
+           },
+           "lhs": {
+            "t": "literal",
+            "length": 1,
+            "hex": "01"
+           }
+          },
+          "lhs": {
+           "t": "literal",
+           "length": 1,
+           "hex": "01"
+          }
+         },
+         "lhs": {
+          "t": "literal",
+          "length": 1,
+          "hex": "01"
+         }
+        },
+        "lhs": {
+         "t": "literal",
+         "length": 1,
+         "hex": "01"
+        }
+       },
+       "lhs": {
+        "t": "literal",
+        "length": 1,
+        "hex": "01"
+       }
+      }
+     }
+    },
+    {
+     "kind": "event",
+     "i": 13,
+     "data": {
+      "yPk": {
+       "t": "dhPk",
+       "sk": {
+        "timestamp": 8,
+        "t": "random",
+        "size": 32
+       }
+      },
+      "xPk": {
+       "t": "dhPk",
+       "sk": {
+        "timestamp": 4,
+        "t": "random",
+        "size": 32
+       }
+      },
+      "server": "Bob",
+      "kC": {
+       "t": "hash",
+       "input": {
+        "t": "dh",
+        "sk": {
+         "timestamp": 4,
+         "t": "random",
+         "size": 32
+        },
+        "pk": {
+         "t": "dhPk",
+         "sk": {
+          "timestamp": 8,
+          "t": "random",
+          "size": 32
+         }
+        }
+       }
+      },
+      "event": "ClientFinishEvent",
+      "client": "Alice"
+     }
+    },
+    {
+     "kind": "store",
+     "i": 14,
+     "data": {
+      "stateType": "ClientFinishState",
+      "state": {
+       "xPk": {
+        "t": "dhPk",
+        "sk": {
+         "timestamp": 4,
+         "t": "random",
+         "size": 32
+        }
+       },
+       "participant": "Alice",
+       "kC": {
+        "t": "hash",
+        "input": {
+         "t": "dh",
+         "sk": {
+          "timestamp": 4,
+          "t": "random",
+          "size": 32
+         },
+         "pk": {
+          "t": "dhPk",
+          "sk": {
+           "timestamp": 8,
+           "t": "random",
+           "size": 32
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   ]
+  },
+  {
+   "succeeded": true,
+   "name": "compromiseClientEphAttacker",
+   "length": 18,
+   "entries": [
+    {
+     "kind": "random",
+     "i": 0,
+     "data": {
+      "length": 32
+     }
+    },
+    {
+     "kind": "message",
+     "i": 1,
+     "data": {
+      "msg": {
+       "t": "vk",
+       "sk": {
+        "timestamp": 0,
+        "t": "random",
+        "size": 32
+       }
+      }
+     }
+    },
+    {
+     "kind": "storeGlobal",
+     "i": 2,
+     "data": {
+      "stateType": "PublicKeyState \"SignedDH PKI\"",
+      "state": {
+       "pk": {
+        "t": "vk",
+        "sk": {
+         "timestamp": 0,
+         "t": "random",
+         "size": 32
+        }
+       },
+       "p": "Bob"
+      }
+     }
+    },
+    {
+     "kind": "store",
+     "i": 3,
+     "data": {
+      "stateType": "SecretKeyState \"SignedDH PKI\"",
+      "state": {
+       "sk": {
+        "timestamp": 0,
+        "t": "random",
+        "size": 32
+       },
+       "participant": "Bob"
+      }
+     }
+    },
+    {
+     "kind": "random",
+     "i": 4,
+     "data": {
+      "length": 32
+     }
+    },
+    {
+     "kind": "event",
+     "i": 5,
+     "data": {
+      "xPk": {
+       "t": "dhPk",
+       "sk": {
+        "timestamp": 4,
+        "t": "random",
+        "size": 32
+       }
+      },
+      "event": "ClientInitiateEvent",
+      "client": "Alice"
+     }
+    },
+    {
+     "kind": "store",
+     "i": 6,
+     "data": {
+      "stateType": "ClientInitiateState",
+      "state": {
+       "xSk": {
+        "timestamp": 4,
+        "t": "random",
+        "size": 32
+       },
+       "xPk": {
+        "t": "dhPk",
+        "sk": {
+         "timestamp": 4,
+         "t": "random",
+         "size": 32
+        }
+       },
+       "participant": "Alice"
+      }
+     }
+    },
+    {
+     "kind": "message",
+     "i": 7,
+     "data": {
+      "msg": {
+       "t": "dhPk",
+       "sk": {
+        "timestamp": 4,
+        "t": "random",
+        "size": 32
+       }
+      }
+     }
+    },
+    {
+     "kind": "random",
+     "i": 8,
+     "data": {
+      "length": 32
+     }
+    },
+    {
+     "kind": "random",
+     "i": 9,
+     "data": {
+      "length": 32
+     }
+    },
+    {
+     "kind": "event",
+     "i": 10,
+     "data": {
+      "yPk": {
+       "t": "dhPk",
+       "sk": {
+        "timestamp": 8,
+        "t": "random",
+        "size": 32
+       }
+      },
+      "xPk": {
+       "t": "dhPk",
+       "sk": {
+        "timestamp": 4,
+        "t": "random",
+        "size": 32
+       }
+      },
+      "server": "Bob",
+      "kS": {
+       "t": "hash",
+       "input": {
+        "t": "dh",
+        "sk": {
+         "timestamp": 4,
+         "t": "random",
+         "size": 32
+        },
+        "pk": {
+         "t": "dhPk",
+         "sk": {
+          "timestamp": 8,
+          "t": "random",
+          "size": 32
+         }
+        }
+       }
+      },
+      "event": "ServerFinishEvent"
+     }
+    },
+    {
+     "kind": "store",
+     "i": 11,
+     "data": {
+      "stateType": "ServerFinishState",
+      "state": {
+       "yPk": {
+        "t": "dhPk",
+        "sk": {
+         "timestamp": 8,
+         "t": "random",
+         "size": 32
+        }
+       },
+       "participant": "Bob",
+       "kS": {
+        "t": "hash",
+        "input": {
+         "t": "dh",
+         "sk": {
+          "timestamp": 4,
+          "t": "random",
+          "size": 32
+         },
+         "pk": {
+          "t": "dhPk",
+          "sk": {
+           "timestamp": 8,
+           "t": "random",
+           "size": 32
+          }
+         }
+        }
+       }
+      }
+     }
+    },
+    {
+     "kind": "message",
+     "i": 12,
+     "data": {
+      "msg": {
+       "t": "concat",
+       "rhs": {
+        "t": "concat",
+        "rhs": {
+         "t": "concat",
+         "rhs": {
+          "t": "concat",
+          "rhs": {
+           "t": "concat",
+           "rhs": {
+            "t": "concat",
+            "rhs": {
+             "t": "concat",
+             "rhs": {
+              "t": "concat",
+              "rhs": {
+               "t": "concat",
+               "rhs": {
+                "t": "concat",
+                "rhs": {
+                 "t": "concat",
+                 "rhs": {
+                  "t": "concat",
+                  "rhs": {
+                   "t": "concat",
+                   "rhs": {
+                    "t": "concat",
+                    "rhs": {
+                     "t": "concat",
+                     "rhs": {
+                      "t": "concat",
+                      "rhs": {
+                       "t": "concat",
+                       "rhs": {
+                        "t": "concat",
+                        "rhs": {
+                         "t": "concat",
+                         "rhs": {
+                          "t": "concat",
+                          "rhs": {
+                           "t": "concat",
+                           "rhs": {
+                            "t": "concat",
+                            "rhs": {
+                             "t": "concat",
+                             "rhs": {
+                              "t": "concat",
+                              "rhs": {
+                               "t": "concat",
+                               "rhs": {
+                                "t": "concat",
+                                "rhs": {
+                                 "t": "concat",
+                                 "rhs": {
+                                  "t": "concat",
+                                  "rhs": {
+                                   "t": "concat",
+                                   "rhs": {
+                                    "t": "concat",
+                                    "rhs": {
+                                     "t": "concat",
+                                     "rhs": {
+                                      "t": "concat",
+                                      "rhs": {
+                                       "t": "concat",
+                                       "rhs": {
+                                        "t": "concat",
+                                        "rhs": {
+                                         "t": "sign",
+                                         "sk": {
+                                          "timestamp": 0,
+                                          "t": "random",
+                                          "size": 32
+                                         },
+                                         "nonce": {
+                                          "timestamp": 9,
+                                          "t": "random",
+                                          "size": 32
+                                         },
+                                         "msg": {
+                                          "t": "concat",
+                                          "rhs": {
+                                           "t": "concat",
+                                           "rhs": {
+                                            "t": "concat",
+                                            "rhs": {
+                                             "t": "concat",
+                                             "rhs": {
+                                              "t": "concat",
+                                              "rhs": {
+                                               "t": "concat",
+                                               "rhs": {
+                                                "t": "concat",
+                                                "rhs": {
+                                                 "t": "concat",
+                                                 "rhs": {
+                                                  "t": "concat",
+                                                  "rhs": {
+                                                   "t": "concat",
+                                                   "rhs": {
+                                                    "t": "concat",
+                                                    "rhs": {
+                                                     "t": "concat",
+                                                     "rhs": {
+                                                      "t": "concat",
+                                                      "rhs": {
+                                                       "t": "concat",
+                                                       "rhs": {
+                                                        "t": "concat",
+                                                        "rhs": {
+                                                         "t": "concat",
+                                                         "rhs": {
+                                                          "t": "concat",
+                                                          "rhs": {
+                                                           "t": "concat",
+                                                           "rhs": {
+                                                            "t": "concat",
+                                                            "rhs": {
+                                                             "t": "concat",
+                                                             "rhs": {
+                                                              "t": "concat",
+                                                              "rhs": {
+                                                               "t": "concat",
+                                                               "rhs": {
+                                                                "t": "concat",
+                                                                "rhs": {
+                                                                 "t": "concat",
+                                                                 "rhs": {
+                                                                  "t": "concat",
+                                                                  "rhs": {
+                                                                   "t": "concat",
+                                                                   "rhs": {
+                                                                    "t": "concat",
+                                                                    "rhs": {
+                                                                     "t": "concat",
+                                                                     "rhs": {
+                                                                      "t": "concat",
+                                                                      "rhs": {
+                                                                       "t": "concat",
+                                                                       "rhs": {
+                                                                        "t": "concat",
+                                                                        "rhs": {
+                                                                         "t": "concat",
+                                                                         "rhs": {
+                                                                          "t": "concat",
+                                                                          "rhs": {
+                                                                           "t": "concat",
+                                                                           "rhs": {
+                                                                            "t": "dhPk",
+                                                                            "sk": {
+                                                                             "timestamp": 8,
+                                                                             "t": "random",
+                                                                             "size": 32
+                                                                            }
+                                                                           },
+                                                                           "lhs": {
+                                                                            "t": "dhPk",
+                                                                            "sk": {
+                                                                             "timestamp": 4,
+                                                                             "t": "random",
+                                                                             "size": 32
+                                                                            }
+                                                                           }
+                                                                          },
+                                                                          "lhs": {
+                                                                           "t": "literal",
+                                                                           "length": 1,
+                                                                           "hex": "00"
+                                                                          }
+                                                                         },
+                                                                         "lhs": {
+                                                                          "t": "literal",
+                                                                          "length": 1,
+                                                                          "hex": "01"
+                                                                         }
+                                                                        },
+                                                                        "lhs": {
+                                                                         "t": "literal",
+                                                                         "length": 1,
+                                                                         "hex": "01"
+                                                                        }
+                                                                       },
+                                                                       "lhs": {
+                                                                        "t": "literal",
+                                                                        "length": 1,
+                                                                        "hex": "01"
+                                                                       }
+                                                                      },
+                                                                      "lhs": {
+                                                                       "t": "literal",
+                                                                       "length": 1,
+                                                                       "hex": "01"
+                                                                      }
+                                                                     },
+                                                                     "lhs": {
+                                                                      "t": "literal",
+                                                                      "length": 1,
+                                                                      "hex": "01"
+                                                                     }
+                                                                    },
+                                                                    "lhs": {
+                                                                     "t": "literal",
+                                                                     "length": 1,
+                                                                     "hex": "01"
+                                                                    }
+                                                                   },
+                                                                   "lhs": {
+                                                                    "t": "literal",
+                                                                    "length": 1,
+                                                                    "hex": "01"
+                                                                   }
+                                                                  },
+                                                                  "lhs": {
+                                                                   "t": "literal",
+                                                                   "length": 1,
+                                                                   "hex": "01"
+                                                                  }
+                                                                 },
+                                                                 "lhs": {
+                                                                  "t": "literal",
+                                                                  "length": 1,
+                                                                  "hex": "01"
+                                                                 }
+                                                                },
+                                                                "lhs": {
+                                                                 "t": "literal",
+                                                                 "length": 1,
+                                                                 "hex": "01"
+                                                                }
+                                                               },
+                                                               "lhs": {
+                                                                "t": "literal",
+                                                                "length": 1,
+                                                                "hex": "01"
+                                                               }
+                                                              },
+                                                              "lhs": {
+                                                               "t": "literal",
+                                                               "length": 1,
+                                                               "hex": "01"
+                                                              }
+                                                             },
+                                                             "lhs": {
+                                                              "t": "literal",
+                                                              "length": 1,
+                                                              "hex": "01"
+                                                             }
+                                                            },
+                                                            "lhs": {
+                                                             "t": "literal",
+                                                             "length": 1,
+                                                             "hex": "01"
+                                                            }
+                                                           },
+                                                           "lhs": {
+                                                            "t": "literal",
+                                                            "length": 1,
+                                                            "hex": "01"
+                                                           }
+                                                          },
+                                                          "lhs": {
+                                                           "t": "literal",
+                                                           "length": 1,
+                                                           "hex": "01"
+                                                          }
+                                                         },
+                                                         "lhs": {
+                                                          "t": "literal",
+                                                          "length": 1,
+                                                          "hex": "01"
+                                                         }
+                                                        },
+                                                        "lhs": {
+                                                         "t": "literal",
+                                                         "length": 1,
+                                                         "hex": "01"
+                                                        }
+                                                       },
+                                                       "lhs": {
+                                                        "t": "literal",
+                                                        "length": 1,
+                                                        "hex": "01"
+                                                       }
+                                                      },
+                                                      "lhs": {
+                                                       "t": "literal",
+                                                       "length": 1,
+                                                       "hex": "01"
+                                                      }
+                                                     },
+                                                     "lhs": {
+                                                      "t": "literal",
+                                                      "length": 1,
+                                                      "hex": "01"
+                                                     }
+                                                    },
+                                                    "lhs": {
+                                                     "t": "literal",
+                                                     "length": 1,
+                                                     "hex": "01"
+                                                    }
+                                                   },
+                                                   "lhs": {
+                                                    "t": "literal",
+                                                    "length": 1,
+                                                    "hex": "01"
+                                                   }
+                                                  },
+                                                  "lhs": {
+                                                   "t": "literal",
+                                                   "length": 1,
+                                                   "hex": "01"
+                                                  }
+                                                 },
+                                                 "lhs": {
+                                                  "t": "literal",
+                                                  "length": 1,
+                                                  "hex": "01"
+                                                 }
+                                                },
+                                                "lhs": {
+                                                 "t": "literal",
+                                                 "length": 1,
+                                                 "hex": "01"
+                                                }
+                                               },
+                                               "lhs": {
+                                                "t": "literal",
+                                                "length": 1,
+                                                "hex": "01"
+                                               }
+                                              },
+                                              "lhs": {
+                                               "t": "literal",
+                                               "length": 1,
+                                               "hex": "01"
+                                              }
+                                             },
+                                             "lhs": {
+                                              "t": "literal",
+                                              "length": 1,
+                                              "hex": "01"
+                                             }
+                                            },
+                                            "lhs": {
+                                             "t": "literal",
+                                             "length": 1,
+                                             "hex": "01"
+                                            }
+                                           },
+                                           "lhs": {
+                                            "t": "literal",
+                                            "length": 1,
+                                            "hex": "01"
+                                           }
+                                          },
+                                          "lhs": {
+                                           "t": "literal",
+                                           "length": 1,
+                                           "hex": "01"
+                                          }
+                                         }
+                                        },
+                                        "lhs": {
+                                         "t": "dhPk",
+                                         "sk": {
+                                          "timestamp": 8,
+                                          "t": "random",
+                                          "size": 32
+                                         }
+                                        }
+                                       },
+                                       "lhs": {
+                                        "t": "literal",
+                                        "length": 1,
+                                        "hex": "00"
+                                       }
+                                      },
+                                      "lhs": {
+                                       "t": "literal",
+                                       "length": 1,
+                                       "hex": "01"
+                                      }
+                                     },
+                                     "lhs": {
+                                      "t": "literal",
+                                      "length": 1,
+                                      "hex": "01"
+                                     }
+                                    },
+                                    "lhs": {
+                                     "t": "literal",
+                                     "length": 1,
+                                     "hex": "01"
+                                    }
+                                   },
+                                   "lhs": {
+                                    "t": "literal",
+                                    "length": 1,
+                                    "hex": "01"
+                                   }
+                                  },
+                                  "lhs": {
+                                   "t": "literal",
+                                   "length": 1,
+                                   "hex": "01"
+                                  }
+                                 },
+                                 "lhs": {
+                                  "t": "literal",
+                                  "length": 1,
+                                  "hex": "01"
+                                 }
+                                },
+                                "lhs": {
+                                 "t": "literal",
+                                 "length": 1,
+                                 "hex": "01"
+                                }
+                               },
+                               "lhs": {
+                                "t": "literal",
+                                "length": 1,
+                                "hex": "01"
+                               }
+                              },
+                              "lhs": {
+                               "t": "literal",
+                               "length": 1,
+                               "hex": "01"
+                              }
+                             },
+                             "lhs": {
+                              "t": "literal",
+                              "length": 1,
+                              "hex": "01"
+                             }
+                            },
+                            "lhs": {
+                             "t": "literal",
+                             "length": 1,
+                             "hex": "01"
+                            }
+                           },
+                           "lhs": {
+                            "t": "literal",
+                            "length": 1,
+                            "hex": "01"
+                           }
+                          },
+                          "lhs": {
+                           "t": "literal",
+                           "length": 1,
+                           "hex": "01"
+                          }
+                         },
+                         "lhs": {
+                          "t": "literal",
+                          "length": 1,
+                          "hex": "01"
+                         }
+                        },
+                        "lhs": {
+                         "t": "literal",
+                         "length": 1,
+                         "hex": "01"
+                        }
+                       },
+                       "lhs": {
+                        "t": "literal",
+                        "length": 1,
+                        "hex": "01"
+                       }
+                      },
+                      "lhs": {
+                       "t": "literal",
+                       "length": 1,
+                       "hex": "01"
+                      }
+                     },
+                     "lhs": {
+                      "t": "literal",
+                      "length": 1,
+                      "hex": "01"
+                     }
+                    },
+                    "lhs": {
+                     "t": "literal",
+                     "length": 1,
+                     "hex": "01"
+                    }
+                   },
+                   "lhs": {
+                    "t": "literal",
+                    "length": 1,
+                    "hex": "01"
+                   }
+                  },
+                  "lhs": {
+                   "t": "literal",
+                   "length": 1,
+                   "hex": "01"
+                  }
+                 },
+                 "lhs": {
+                  "t": "literal",
+                  "length": 1,
+                  "hex": "01"
+                 }
+                },
+                "lhs": {
+                 "t": "literal",
+                 "length": 1,
+                 "hex": "01"
+                }
+               },
+               "lhs": {
+                "t": "literal",
+                "length": 1,
+                "hex": "01"
+               }
+              },
+              "lhs": {
+               "t": "literal",
+               "length": 1,
+               "hex": "01"
+              }
+             },
+             "lhs": {
+              "t": "literal",
+              "length": 1,
+              "hex": "01"
+             }
+            },
+            "lhs": {
+             "t": "literal",
+             "length": 1,
+             "hex": "01"
+            }
+           },
+           "lhs": {
+            "t": "literal",
+            "length": 1,
+            "hex": "01"
+           }
+          },
+          "lhs": {
+           "t": "literal",
+           "length": 1,
+           "hex": "01"
+          }
+         },
+         "lhs": {
+          "t": "literal",
+          "length": 1,
+          "hex": "01"
+         }
+        },
+        "lhs": {
+         "t": "literal",
+         "length": 1,
+         "hex": "01"
+        }
+       },
+       "lhs": {
+        "t": "literal",
+        "length": 1,
+        "hex": "01"
+       }
+      }
+     }
+    },
+    {
+     "kind": "event",
+     "i": 13,
+     "data": {
+      "yPk": {
+       "t": "dhPk",
+       "sk": {
+        "timestamp": 8,
+        "t": "random",
+        "size": 32
+       }
+      },
+      "xPk": {
+       "t": "dhPk",
+       "sk": {
+        "timestamp": 4,
+        "t": "random",
+        "size": 32
+       }
+      },
+      "server": "Bob",
+      "kC": {
+       "t": "hash",
+       "input": {
+        "t": "dh",
+        "sk": {
+         "timestamp": 4,
+         "t": "random",
+         "size": 32
+        },
+        "pk": {
+         "t": "dhPk",
+         "sk": {
+          "timestamp": 8,
+          "t": "random",
+          "size": 32
+         }
+        }
+       }
+      },
+      "event": "ClientFinishEvent",
+      "client": "Alice"
+     }
+    },
+    {
+     "kind": "store",
+     "i": 14,
+     "data": {
+      "stateType": "ClientFinishState",
+      "state": {
+       "xPk": {
+        "t": "dhPk",
+        "sk": {
+         "timestamp": 4,
+         "t": "random",
+         "size": 32
+        }
+       },
+       "participant": "Alice",
+       "kC": {
+        "t": "hash",
+        "input": {
+         "t": "dh",
+         "sk": {
+          "timestamp": 4,
+          "t": "random",
+          "size": 32
+         },
+         "pk": {
+          "t": "dhPk",
+          "sk": {
+           "timestamp": 8,
+           "t": "random",
+           "size": 32
+          }
+         }
+        }
+       }
+      }
+     }
+    },
+    {
+     "kind": "compromise",
+     "i": 15,
+     "data": {
+      "stateType": "ClientInitiateState",
+      "state": {
+       "xSk": {
+        "timestamp": 4,
+        "t": "random",
+        "size": 32
+       },
+       "xPk": {
+        "t": "dhPk",
+        "sk": {
+         "timestamp": 4,
+         "t": "random",
+         "size": 32
+        }
+       },
+       "participant": "Alice"
+      }
+     }
+    },
+    {
+     "kind": "message",
+     "i": 16,
+     "data": {
+      "msg": {
+       "t": "concat",
+       "rhs": {
+        "t": "concat",
+        "rhs": {
+         "t": "concat",
+         "rhs": {
+          "t": "concat",
+          "rhs": {
+           "t": "concat",
+           "rhs": {
+            "t": "concat",
+            "rhs": {
+             "t": "concat",
+             "rhs": {
+              "t": "concat",
+              "rhs": {
+               "t": "concat",
+               "rhs": {
+                "t": "concat",
+                "rhs": {
+                 "t": "concat",
+                 "rhs": {
+                  "t": "concat",
+                  "rhs": {
+                   "t": "concat",
+                   "rhs": {
+                    "t": "concat",
+                    "rhs": {
+                     "t": "concat",
+                     "rhs": {
+                      "t": "concat",
+                      "rhs": {
+                       "t": "concat",
+                       "rhs": {
+                        "t": "concat",
+                        "rhs": {
+                         "t": "concat",
+                         "rhs": {
+                          "t": "concat",
+                          "rhs": {
+                           "t": "concat",
+                           "rhs": {
+                            "t": "concat",
+                            "rhs": {
+                             "t": "concat",
+                             "rhs": {
+                              "t": "concat",
+                              "rhs": {
+                               "t": "concat",
+                               "rhs": {
+                                "t": "concat",
+                                "rhs": {
+                                 "t": "concat",
+                                 "rhs": {
+                                  "t": "concat",
+                                  "rhs": {
+                                   "t": "concat",
+                                   "rhs": {
+                                    "t": "concat",
+                                    "rhs": {
+                                     "t": "concat",
+                                     "rhs": {
+                                      "t": "concat",
+                                      "rhs": {
+                                       "t": "concat",
+                                       "rhs": {
+                                        "t": "concat",
+                                        "rhs": {
+                                         "t": "concat",
+                                         "rhs": {
+                                          "t": "concat",
+                                          "rhs": {
+                                           "t": "concat",
+                                           "rhs": {
+                                            "t": "concat",
+                                            "rhs": {
+                                             "t": "concat",
+                                             "rhs": {
+                                              "t": "concat",
+                                              "rhs": {
+                                               "t": "concat",
+                                               "rhs": {
+                                                "timestamp": 4,
+                                                "t": "random",
+                                                "size": 32
+                                               },
+                                               "lhs": {
+                                                "t": "dhPk",
+                                                "sk": {
+                                                 "timestamp": 4,
+                                                 "t": "random",
+                                                 "size": 32
+                                                }
+                                               }
+                                              },
+                                              "lhs": {
+                                               "t": "literal",
+                                               "length": 1,
+                                               "hex": "00"
+                                              }
+                                             },
+                                             "lhs": {
+                                              "t": "literal",
+                                              "length": 1,
+                                              "hex": "01"
+                                             }
+                                            },
+                                            "lhs": {
+                                             "t": "literal",
+                                             "length": 1,
+                                             "hex": "01"
+                                            }
+                                           },
+                                           "lhs": {
+                                            "t": "literal",
+                                            "length": 1,
+                                            "hex": "01"
+                                           }
+                                          },
+                                          "lhs": {
+                                           "t": "literal",
+                                           "length": 1,
+                                           "hex": "01"
+                                          }
+                                         },
+                                         "lhs": {
+                                          "t": "literal",
+                                          "length": 1,
+                                          "hex": "01"
+                                         }
+                                        },
+                                        "lhs": {
+                                         "t": "literal",
+                                         "length": 1,
+                                         "hex": "01"
+                                        }
+                                       },
+                                       "lhs": {
+                                        "t": "literal",
+                                        "length": 1,
+                                        "hex": "01"
+                                       }
+                                      },
+                                      "lhs": {
+                                       "t": "literal",
+                                       "length": 1,
+                                       "hex": "01"
+                                      }
+                                     },
+                                     "lhs": {
+                                      "t": "literal",
+                                      "length": 1,
+                                      "hex": "01"
+                                     }
+                                    },
+                                    "lhs": {
+                                     "t": "literal",
+                                     "length": 1,
+                                     "hex": "01"
+                                    }
+                                   },
+                                   "lhs": {
+                                    "t": "literal",
+                                    "length": 1,
+                                    "hex": "01"
+                                   }
+                                  },
+                                  "lhs": {
+                                   "t": "literal",
+                                   "length": 1,
+                                   "hex": "01"
+                                  }
+                                 },
+                                 "lhs": {
+                                  "t": "literal",
+                                  "length": 1,
+                                  "hex": "01"
+                                 }
+                                },
+                                "lhs": {
+                                 "t": "literal",
+                                 "length": 1,
+                                 "hex": "01"
+                                }
+                               },
+                               "lhs": {
+                                "t": "literal",
+                                "length": 1,
+                                "hex": "01"
+                               }
+                              },
+                              "lhs": {
+                               "t": "literal",
+                               "length": 1,
+                               "hex": "01"
+                              }
+                             },
+                             "lhs": {
+                              "t": "literal",
+                              "length": 1,
+                              "hex": "01"
+                             }
+                            },
+                            "lhs": {
+                             "t": "literal",
+                             "length": 1,
+                             "hex": "01"
+                            }
+                           },
+                           "lhs": {
+                            "t": "literal",
+                            "length": 1,
+                            "hex": "01"
+                           }
+                          },
+                          "lhs": {
+                           "t": "literal",
+                           "length": 1,
+                           "hex": "01"
+                          }
+                         },
+                         "lhs": {
+                          "t": "literal",
+                          "length": 1,
+                          "hex": "01"
+                         }
+                        },
+                        "lhs": {
+                         "t": "literal",
+                         "length": 1,
+                         "hex": "01"
+                        }
+                       },
+                       "lhs": {
+                        "t": "literal",
+                        "length": 1,
+                        "hex": "01"
+                       }
+                      },
+                      "lhs": {
+                       "t": "literal",
+                       "length": 1,
+                       "hex": "01"
+                      }
+                     },
+                     "lhs": {
+                      "t": "literal",
+                      "length": 1,
+                      "hex": "01"
+                     }
+                    },
+                    "lhs": {
+                     "t": "literal",
+                     "length": 1,
+                     "hex": "01"
+                    }
+                   },
+                   "lhs": {
+                    "t": "literal",
+                    "length": 1,
+                    "hex": "01"
+                   }
+                  },
+                  "lhs": {
+                   "t": "literal",
+                   "length": 1,
+                   "hex": "01"
+                  }
+                 },
+                 "lhs": {
+                  "t": "literal",
+                  "length": 1,
+                  "hex": "01"
+                 }
+                },
+                "lhs": {
+                 "t": "literal",
+                 "length": 1,
+                 "hex": "01"
+                }
+               },
+               "lhs": {
+                "t": "literal",
+                "length": 1,
+                "hex": "01"
+               }
+              },
+              "lhs": {
+               "t": "literal",
+               "length": 1,
+               "hex": "01"
+              }
+             },
+             "lhs": {
+              "text": "Alice",
+              "t": "literal",
+              "length": 5,
+              "hex": "416c696365"
+             }
+            },
+            "lhs": {
+             "t": "literal",
+             "length": 1,
+             "hex": "00"
+            }
+           },
+           "lhs": {
+            "t": "literal",
+            "length": 1,
+            "hex": "01"
+           }
+          },
+          "lhs": {
+           "t": "literal",
+           "length": 1,
+           "hex": "01"
+          }
+         },
+         "lhs": {
+          "t": "literal",
+          "length": 1,
+          "hex": "01"
+         }
+        },
+        "lhs": {
+         "t": "literal",
+         "length": 1,
+         "hex": "01"
+        }
+       },
+       "lhs": {
+        "t": "literal",
+        "length": 1,
+        "hex": "01"
+       }
+      }
+     }
+    },
+    {
+     "kind": "message",
+     "i": 17,
+     "data": {
+      "msg": {
+       "t": "hash",
+       "input": {
+        "t": "dh",
+        "sk": {
+         "timestamp": 4,
+         "t": "random",
+         "size": 32
+        },
+        "pk": {
+         "t": "dhPk",
+         "sk": {
+          "timestamp": 8,
+          "t": "random",
+          "size": 32
+         }
+        }
+       }
+      }
+     }
+    }
+   ]
+  }
+ ],
+ "meta": {
+  "revision": "a9bb92b",
+  "exporter": 1
+ }
+}

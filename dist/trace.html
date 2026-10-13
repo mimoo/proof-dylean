@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101923"><title>DyLean · A real trace</title><link rel="icon" href="data:,">
+<meta name="description" content="A real execution of the signed Diffie–Hellman example, entry by entry: the execution view, the ghost proof view, the action that appended each entry with its Hoare triple, and the invariant it satisfies.">
+<link rel="stylesheet" href="trace.css"><link rel="stylesheet" href="cards.css"><script defer src="toolkit-data.js"></script><script defer src="trace/trace-data.js"></script><script defer src="cards.js"></script><script defer src="trace.js"></script></head>
+<body data-view="both">
+<header><a class="brand" href="index.html"><b>δ</b> DyLean <span>/ a real trace</span></a><nav class="header-links"><a href="walkthrough.html">Guided walkthrough ▶</a><a href="toolkit.html">Proof toolkit</a><a href="combine.html">How #combine works</a><a href="source.html" target="_blank" rel="noopener">Source browser ↗</a></nav></header>
+<main>
+  <p class="eyebrow">FROM THE EXECUTION UP</p>
+  <h1>What a trace actually contains</h1>
+  <p class="lede">Every page so far reads the proof from the theorem downward. This one starts from a <b>real run</b>: the sanity-check programs in <code>SanityChecks.lean</code> executed in Lean, their traces exported entry by entry. For each entry you see what the attacker sees, what only the proof sees, the action that appended it with the triple it had to satisfy, and the invariant that is now true at that index. Reads and pure computations are shown between the entries so each step's whole do-block is visible.</p>
+
+  <div class="scenarios" id="scenarios" role="tablist"></div>
+  <p class="scenario-intro" id="scenario-intro"></p>
+  <p class="scenario-src" id="scenario-src"></p>
+
+  <div class="legend">
+    <span class="kind-message"><b></b>message, on the wire</span>
+    <span class="kind-random"><b></b>random bytes</span>
+    <span class="kind-event"><b></b>protocol event</span>
+    <span class="kind-store"><b></b>stored state</span>
+    <span class="kind-compromise"><b></b>compromise</span>
+    <span><span class="t">⟨n⟩</span> unary length prefix in a serialised message</span>
+    <span>named chips open to their term; hover for the definition</span>
+    <span class="views" role="group" aria-label="Which face to show"><button data-view="both" aria-pressed="true">both faces</button><button data-view="exec" aria-pressed="false">execution only</button><button data-view="proof" aria-pressed="false">proof only</button></span>
+  </div>
+
+  <div class="timeline" id="timeline"></div>
+
+  <section class="glossary" aria-label="Names used on this page">
+    <h2>Names used on this page</h2>
+    <p class="muted" style="color:var(--muted);font-size:13.5px;max-width:80ch">The trace contains terms, not names. These labels are assigned here by matching the exported term structure, so <code>xSk</code> always means the random value generated at index 4 and <code>k</code> always means the hash of the normalised DH term.</p>
+    <dl id="glossary"></dl>
+  </section>
+</main>
+<footer>Traces produced by <code>scripts/ExportTrace.lean</code> from the DyLean snapshot in this site's export. The annotations are editorial and link to the declarations they paraphrase.</footer>
+<template id="card-template">
+  <article class="card">
+    <header class="card-head">
+      <button class="card-toggle" aria-expanded="false" aria-label="Toggle source">▸</button>
+      <div class="card-title"><code class="card-name"></code><span class="kind"></span><span class="role"></span></div>
+      <div class="card-links"><a class="src-link" target="_blank" rel="noopener">source</a><a class="proof-link" href="#" hidden>proof tree</a><button class="card-close" aria-label="Close" hidden>×</button></div>
+    </header>
+    <div class="card-notes"></div>
+    <div class="card-body" hidden>
+      <pre class="lean"></pre>
+      <div class="nested"></div>
+    </div>
+  </article>
+</template>
+</body></html>
