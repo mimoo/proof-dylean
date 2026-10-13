@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101923"><title>DyLean · Proof toolkit</title><link rel="icon" href="data:,"><link rel="stylesheet" href="toolkit.css"><script defer src="toolkit-data.js"></script><script defer src="toolkit.js"></script></head>
+<body>
+<header><a class="brand" href="proof.html"><b>δ</b> DyLean <span>/ proof toolkit</span></a><nav class="header-links"><a href="walkthrough.html">Guided walkthrough ▶</a><a href="proof.html">Compiled proof tree</a><a href="index.html" target="_blank" rel="noopener">Source browser ↗</a></nav></header>
+<main>
+<aside class="guide">
+  <p class="eyebrow">THE INGREDIENTS</p>
+  <h1>What can a proof use?</h1>
+  <p class="intro">Every row is a declaration of DyLean or of the SignedDH example. <b>Must prove</b> is what it costs you to introduce it. <b>You get</b> is what it hands you. Open a row to read its Lean source; click any name inside to open that declaration nested underneath, as deep as you like.</p>
+  <nav id="categories" aria-label="Categories"></nav>
+  <label class="search-label" for="decl-search">Open any declaration</label>
+  <input id="decl-search" type="search" placeholder="EventInv, canFlow, Client.finish…" autocomplete="off">
+  <div id="search-results"></div>
+  <p id="build-info" class="muted"></p>
+</aside>
+<section class="toolkit" aria-label="Proof toolkit">
+  <div id="scratch" class="scratch" hidden><div class="scratch-title"><span>OPENED FROM SEARCH OR LINK</span><button id="clear-scratch">Clear</button></div><div id="scratch-body"></div></div>
+  <div id="toolkit-body"><p class="muted">Loading…</p></div>
+</section>
+<section class="source-panel" aria-label="Linked Lean source"><div class="source-title"><span>ORIGINAL LEAN SOURCE</span><button id="toggle-source">Hide source</button></div><iframe name="source-frame" id="source-frame" title="Browsable Lean source" src="index.html#file=Examples%2FSignedDH%2FSecurityTheorems.lean&line=39"></iframe></section>
+</main>
+<template id="card-template">
+  <article class="card">
+    <header class="card-head">
+      <button class="card-toggle" aria-expanded="false" aria-label="Toggle source">▸</button>
+      <div class="card-title"><code class="card-name"></code><span class="kind"></span><span class="role"></span></div>
+      <div class="card-links"><a class="src-link" target="source-frame">source</a><a class="proof-link" href="#" hidden>proof tree</a><button class="card-close" aria-label="Close" hidden>×</button></div>
+    </header>
+    <div class="card-notes"></div>
+    <div class="card-body" hidden>
+      <pre class="lean"></pre>
+      <div class="nested"></div>
+    </div>
+  </article>
+</template>
+</body></html>

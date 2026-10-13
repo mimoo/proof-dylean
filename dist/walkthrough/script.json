@@ -1,0 +1,53 @@
+{
+  "voice": "Tp2c4WDWnzXNRUWk4Ey3",
+  "model": "eleven_multilingual_v2",
+  "pronounce": {
+    "DyLean": "Dye-Lean"
+  },
+  "steps": [
+    {
+      "id": "intro",
+      "text": "This is a walkthrough of one security theorem from DyLean: the secrecy of the client's key in a signed Diffie-Hellman handshake. The Lean proof is six lines long, but each line hides a lot. I'll go through it one step at a time. Use the arrows to move between steps, and press space to pause me."
+    },
+    {
+      "id": "statement",
+      "text": "Here is the statement. We fix a client, a server, two Diffie-Hellman public keys, x and y, and a key k. Then we take any execution trace that the protocol and the attacker can actually reach. We assume two things about it: the attacker knows k, and at some time, the client logged a finish event saying it derived k from x and y with this server. From that, we have to prove that something went wrong."
+    },
+    {
+      "id": "outcomes",
+      "text": "Something went wrong means exactly one of three things. Either the server's long-term signing key was compromised before the client finished. Or the client's own ephemeral state for x was compromised. Or the server's ephemeral state for y was compromised. If none of these happened, the attacker cannot know k. That is the secrecy guarantee: there is no fourth way."
+    },
+    {
+      "id": "problem",
+      "text": "The difficulty is the word reachable. A reachable trace is any interleaving of honest protocol steps and attacker actions, of any length. The attacker can hash, exponentiate, sign, replay, and corrupt participants. We cannot enumerate those traces. So the first move of the proof is to never look at them directly."
+    },
+    {
+      "id": "apply",
+      "text": "The first tactic applies a library lemma that swaps the goal. Instead of proving the claim for every reachable execution trace, we prove it for every proof trace that satisfies the global invariant. The lemma does the induction over reachability once and for all: every protocol step was shown to preserve the invariant, so every reachable trace has an invariant-satisfying proof trace behind it. Our goal is now about a single trace that we know is well-behaved."
+    },
+    {
+      "id": "intro-names",
+      "text": "The second tactic just gives names to what we have. The trace is called t r. Then come three hypotheses: the trace satisfies the invariant, the attacker knows k, and the client's finish event is logged at the given time. Notice that the event and the attacker's knowledge are stated on the erased trace, which is the execution view of the proof trace."
+    },
+    {
+      "id": "have",
+      "text": "Now the only creative step in the proof. When a participant logs an event, the invariant requires a specific fact to hold at that moment. This library lemma extracts that fact: because the trace is invariant, and the finish event is in it at this time, the event's invariant held on the prefix of the trace up to that time. The proof names this fact 'this'. Everything after is unfolding definitions."
+    },
+    {
+      "id": "simp",
+      "text": "Simp unfolds what the event invariant says for a client finish event. It is a disjunction. First case: the server had already logged a matching finish event, k satisfies the bytes invariant, and the label of k is the join of the client's label for x and the server's label for y. Second case: some signing key of the server was already corrupt. The second case is the first outcome of our theorem. So the real work is in the first case."
+    },
+    {
+      "id": "publishable",
+      "text": "Here is the piece that makes the theorem finite. The attacker's knowledge is defined as a least fixpoint: the smallest set closed under all attacker operations. A library theorem shows that publishable bytes contain the base knowledge and are closed under each operation. By the least-fixpoint property, everything the attacker knows is publishable. And publishable means the label of the bytes can flow to the public label, which by definition means the label is corrupt. So from attacker knows k, grind gets: the label of k is corrupt."
+    },
+    {
+      "id": "grind",
+      "text": "The last tactics match the pieces. The label of k is the join of the client label and the server label. A join is corrupt exactly when one side is corrupt. The client label is corrupt exactly when the client's ephemeral state for x was compromised. The server label, when the server's state for y was. Those are outcomes two and three. The other case of the invariant gave outcome one. Every case lands in the theorem's conclusion, and grind closes the goal."
+    },
+    {
+      "id": "recap",
+      "text": "So the whole proof is three facts. Reachable traces satisfy the invariant. The invariant at the finish event pins down the label of k. And anything the attacker knows has a corrupt label. In the compiled proof tree, the first lemma application is the apply, the function with four parameters is the intro, the let is the have, and the generated helper at the bottom is simp and grind. If you open it from here, you will land on the same tree."
+    }
+  ]
+}

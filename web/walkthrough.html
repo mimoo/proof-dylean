@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#101923"><title>DyLean · Secrecy, step by step</title><link rel="icon" href="data:,"><link rel="stylesheet" href="walkthrough.css"><script defer src="walkthrough/narration.js"></script><script defer src="walkthrough.js"></script></head>
+<body>
+<header><a class="brand" href="proof.html"><b>δ</b> DyLean <span>/ secrecy, step by step</span></a><nav class="header-links"><a href="proof.html">Compiled proof tree</a><a href="toolkit.html">Proof toolkit</a><a href="index.html" target="_blank" rel="noopener">Source browser ↗</a></nav></header>
+
+<main>
+<section class="stage" aria-live="polite">
+
+<article class="step" data-step="intro" data-title="A six-line proof" data-eyebrow="SIGNED DIFFIE–HELLMAN · CLIENT SECRECY" data-source="Examples%2FSignedDH%2FSecurityTheorems.lean&amp;line=39">
+  <svg class="diagram" viewBox="0 0 680 300" role="img" aria-label="Client and server exchange Diffie-Hellman shares through the attacker; three compromise points are marked.">
+    <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker></defs>
+    <g class="party" data-cue="the client's key"><rect x="20" y="40" width="150" height="56" rx="10"/><text x="95" y="74">client</text></g>
+    <g class="party" data-cue="the client's key"><rect x="510" y="40" width="150" height="56" rx="10"/><text x="585" y="74">server</text></g>
+    <g class="attacker" data-cue="one security theorem"><circle cx="340" cy="68" r="26"/><text x="340" y="73">∀</text><text class="caption" x="340" y="118">the attacker sees and rewrites everything</text></g>
+    <g class="msg" data-cue="signed Diffie-Hellman handshake"><line x1="175" y1="150" x2="505" y2="150" marker-end="url(#arr)"/><text x="340" y="142">xPk = gˣ</text></g>
+    <g class="msg" data-cue="signed Diffie-Hellman handshake"><line x1="505" y1="200" x2="175" y2="200" marker-end="url(#arr)"/><text x="340" y="192">yPk = gʸ,  sig<tspan baseline-shift="sub" font-size="10">server</tspan>(xPk, yPk)</text></g>
+    <g class="key" data-cue="the secrecy of the client's key"><text x="95" y="250">k = H(yPkˣ)</text><text x="585" y="250">k = H(xPkʸ)</text></g>
+    <g class="mark m1" data-cue="each line hides a lot"><circle cx="632" cy="40" r="11"/><text x="632" y="44">1</text><text class="caption" x="646" y="24">long-term signing key</text></g>
+    <g class="mark m2" data-cue="each line hides a lot"><circle cx="48" cy="268" r="11"/><text x="48" y="272">2</text><text class="caption" x="34" y="292">client state for x</text></g>
+    <g class="mark m3" data-cue="each line hides a lot"><circle cx="632" cy="268" r="11"/><text x="632" y="272">3</text><text class="caption" x="646" y="292">server state for y</text></g>
+    <text class="claim" data-cue="one step at a time" x="340" y="284">if the attacker knows k, then ① or ② or ③ happened</text>
+  </svg>
+</article>
+
+<article class="step" data-step="statement" data-title="What is being claimed" data-eyebrow="THE STATEMENT · SecurityTheorems.lean:39" data-source="Examples%2FSignedDH%2FSecurityTheorems.lean&amp;line=39">
+  <div class="code annotated">
+    <div><code><span class="kw">theorem</span> client_secrecy</code></div>
+    <div data-cue="We fix a client, a server"><code>  (client server : Participant)</code><span>who is talking</span></div>
+    <div data-cue="two Diffie-Hellman public keys"><code>  (xPk yPk k : Bytes)</code><span>the two DH shares and the derived key</span></div>
+    <div data-cue="we take any execution trace"><code>  : ∀ tr : ExecTrace,</code><span>any execution trace…</span></div>
+    <div class="hl" data-cue="can actually reach"><code>    tr.Reachable reachability →</code><span>…that protocol + attacker can reach</span></div>
+    <div class="hl" data-cue="the attacker knows k, and"><code>    k.AttackerKnows tr →</code><span>assumption 1: the attacker knows k</span></div>
+    <div class="hl" data-cue="the client logged a finish event"><code>    tr.EventLoggedAt (ClientFinishEvent client server xPk yPk k) time →</code><span>assumption 2: the client finished with k</span></div>
+    <div data-cue="something went wrong"><code>    <em>something went wrong</em></code><span>the conclusion, next step</span></div>
+  </div>
+</article>
+
+<article class="step" data-step="outcomes" data-title="The three ways it can go wrong" data-eyebrow="THE CONCLUSION · SecurityTheorems.lean:46" data-source="Examples%2FSignedDH%2FSecurityTheorems.lean&amp;line=46">
+  <div class="cards">
+    <div class="card" data-cue="server's long-term signing key"><b>1</b><h3>Server's signing key leaked</h3><code>∃ spk, LongTermKeyCompromised "SignedDH PKI" server spk tr_before</code><p>The attacker could forge the signature on yPk. Only counts if it happened <em>before</em> the client finished.</p></div>
+    <div class="card" data-cue="client's own ephemeral state"><b>2</b><h3>Client's ephemeral state leaked</h3><code>ClientEphemeralStateCompromised client xPk tr</code><p>The state holding x, or the finished state holding k, was compromised at any point.</p></div>
+    <div class="card" data-cue="server's ephemeral state for y"><b>3</b><h3>Server's ephemeral state leaked</h3><code>ServerEphemeralStateCompromised server yPk tr</code><p>The state holding y was compromised at any point.</p></div>
+  </div>
+  <p class="under" data-cue="If none of these happened">Secrecy means: <strong>no fourth way</strong>. Honest keys with no compromise stay unknown to the attacker.</p>
+</article>
+
+<article class="step" data-step="problem" data-title="Why this is hard to prove directly" data-eyebrow="REACHABLE TRACES" data-source="DY%2FTrace%2FReachabilityTheorem.lean&amp;line=55">
+  <div class="traces">
+    <div class="trace" data-cue="any interleaving of honest protocol steps"><span class="h">client · init</span><span class="a">attacker · hash</span><span class="h">server · respond</span><span class="a">attacker · replay</span><span class="h">client · finish</span><span class="more">…</span></div>
+    <div class="trace" data-cue="and attacker actions"><span class="a">attacker · corrupt</span><span class="h">client · init</span><span class="a">attacker · dh</span><span class="a">attacker · sign</span><span class="h">server · respond</span><span class="more">…</span></div>
+    <div class="trace" data-cue="of any length"><span class="h">client · init</span><span class="h">client · init</span><span class="a">attacker · send</span><span class="h">server · respond</span><span class="h">server · respond</span><span class="more">…</span></div>
+    <div class="trace faded" data-cue="We cannot enumerate those traces"><span class="more">… infinitely many interleavings, of any length</span></div>
+  </div>
+  <p class="under" data-cue="never look at them directly"><code>tr.Reachable reachability</code> quantifies over all of these. The proof never enumerates them.</p>
+</article>
+
+<article class="step" data-step="apply" data-title="Swap the goal: reachable → invariant" data-eyebrow="TACTIC 1 · apply Trace.apply_Reachable_implies_Invariant" data-source="DY%2FTrace%2FReachabilityTheorem.lean&amp;line=55">
+  <div class="goals">
+    <div class="goal before" data-cue="every reachable execution trace"><span class="tag">goal before</span><pre>⊢ ∀ tr : ExecTrace,
+    tr.Reachable reachability →
+    P tr</pre></div>
+    <div class="arrow" data-cue="swaps the goal">apply</div>
+    <div class="goal after" data-cue="every proof trace that satisfies|Our goal is now"><span class="tag">goal after</span><pre>⊢ ∀ tr : ProofTrace,
+    tr.Invariant →
+    P tr.erase</pre></div>
+  </div>
+  <div class="lemma" data-cue="The lemma does the induction"><span class="tag">the lemma, from the library</span><pre>theorem Trace.apply_Reachable_implies_Invariant
+  [ReachableImpliesInvariant config] {p : ExecTrace → Prop} :
+  (∀ trProof : ProofTrace, trProof.Invariant → p trProof.erase) →
+  (∀ trExec : ExecTrace, trExec.Reachable config → p trExec)</pre><p>Its instance argument is the induction over reachability, proved once: every protocol step and every attacker step preserves the invariant.</p></div>
+</article>
+
+<article class="step" data-step="intro-names" data-title="Name the trace and the hypotheses" data-eyebrow="TACTIC 2 · intro tr h_trinv h_pub h_ev" data-source="Examples%2FSignedDH%2FSecurityTheorems.lean&amp;line=54">
+  <div class="goalstate">
+    <div class="hyp new" data-cue="The trace is called"><b>tr</b><span>: ProofTrace</span></div>
+    <div class="hyp new" data-cue="the trace satisfies the invariant"><b>h_trinv</b><span>: tr.Invariant</span></div>
+    <div class="hyp new" data-cue="the attacker knows k, and the"><b>h_pub</b><span>: k.AttackerKnows tr.erase</span></div>
+    <div class="hyp new" data-cue="finish event is logged"><b>h_ev</b><span>: tr.erase.EventLoggedAt (ClientFinishEvent client server xPk yPk k) time</span></div>
+    <div class="turnstile">⊢ (∃ spk, LongTermKeyCompromised "SignedDH PKI" server spk (tr.erase.prefix time)) ∨
+  ClientEphemeralStateCompromised client xPk tr.erase ∨
+  ServerEphemeralStateCompromised server yPk tr.erase</div>
+  </div>
+  <p class="under" data-cue="stated on the erased trace"><code>tr.erase</code> forgets the proof-only bookkeeping and leaves the execution trace the attacker and the events live on.</p>
+</article>
+
+<article class="step" data-step="have" data-title="Recover the invariant at the moment of the event" data-eyebrow="TACTIC 3 · have := Trace.EventLoggedAt_imp_EventInv _ _ _ h_trinv h_ev" data-source="DY%2FActions%2FProtocolEvent.lean&amp;line=162">
+  <div class="goalstate">
+    <div class="hyp" data-cue="because the trace is invariant"><b>h_trinv</b><span>: tr.Invariant</span></div>
+    <div class="hyp"><b>h_pub</b><span>: k.AttackerKnows tr.erase</span></div>
+    <div class="hyp" data-cue="the finish event is in it"><b>h_ev</b><span>: tr.erase.EventLoggedAt (ClientFinishEvent client server xPk yPk k) time</span></div>
+    <div class="hyp new" data-cue="the event's invariant held on the prefix|names this fact"><b>this</b><span>: EventInv.invariant (tr.prefix time) (ClientFinishEvent client server xPk yPk k)</span></div>
+    <div class="turnstile dim">⊢ … unchanged …</div>
+  </div>
+  <div class="lemma" data-cue="This library lemma extracts"><span class="tag">the lemma</span><pre>theorem Trace.EventLoggedAt_imp_EventInv (ev) (i : Nat) (tr : ProofTrace) :
+  tr.Invariant → tr.erase.EventLoggedAt ev i → EventInv.invariant (tr.prefix i) ev</pre><p>Logging an event is only allowed when its invariant holds, so an event in an invariant trace carries its invariant at the prefix where it was logged.</p></div>
+</article>
+
+<article class="step" data-step="simp" data-title="What the finish event promises" data-eyebrow="TACTIC 4 · simp [ProtocolEvent.EventInv.invariant] at this" data-source="Examples%2FSignedDH%2FProof.lean&amp;line=218">
+  <div class="cases">
+    <div class="case" data-cue="First case|the real work is in the first case"><span class="tag">this, case A</span><pre>(tr.prefix time).erase.EventLogged (ServerFinishEvent server xPk yPk k)
+∧ k.Invariant (tr.prefix time)
+∧ <mark data-cue="the label of k is the join">k.label (tr.prefix time) = (clientLabel client xPk).join (serverLabel server yPk)</mark></pre><p>The server really finished with the same k, and k is labelled with <em>both</em> ephemeral states. Nothing else may learn it.</p></div>
+    <div class="or" data-cue="It is a disjunction">∨</div>
+    <div class="case" data-cue="Second case"><span class="tag">this, case B</span><pre>∃ spk, (LongTermKeys.label "SignedDH PKI" server spk).isCorrupt (tr.prefix time).erase</pre><p>A signing key of the server was already corrupt before the client finished. This is outcome <b>1</b> directly.</p></div>
+  </div>
+  <p class="under" data-cue="Simp unfolds what the event invariant says">Defined per event in <code>SignedDHEventInv</code>, and established by <code>Client.finish.spec</code> when the client logs the event.</p>
+</article>
+
+<article class="step" data-step="publishable" data-title="Anything the attacker knows has a corrupt label" data-eyebrow="HIDDEN INSIDE grind · Bytes.AttackerKnows_implies_Publishable" data-source="DY%2FBytes%2FAttackerKnowledgeTheorem.lean&amp;line=65">
+  <div class="chain">
+    <div class="node" data-cue="The attacker's knowledge is defined"><code>k.AttackerKnows tr.erase</code><span>h_pub</span></div>
+    <div class="link" data-cue="A library theorem shows"><b>AttackerKnows_implies_Publishable</b> — attacker knowledge is the <em>least fixpoint</em> of the attacker's operations; publishable bytes contain the base knowledge and are closed under every operation, so the fixpoint is inside them</div>
+    <div class="node" data-cue="everything the attacker knows is publishable"><code>k.Publishable tr</code></div>
+    <div class="link" data-cue="And publishable means">by definition of <b>Publishable</b></div>
+    <div class="node" data-cue="can flow to the public label"><code>k.Invariant tr ∧ (k.label tr).canFlow Label.pub tr.erase</code></div>
+    <div class="link" data-cue="which by definition means"><b>canFlow</b> l₁ l₂ means: whenever l₂ is corrupt, l₁ is corrupt. <b>Label.pub</b> is always corrupt.</div>
+    <div class="node hot" data-cue="the label of k is corrupt"><code>(k.label tr).isCorrupt tr.erase</code></div>
+  </div>
+</article>
+
+<article class="step" data-step="grind" data-title="Match the label against the three outcomes" data-eyebrow="TACTICS 5–6 · simp_all [clientLabel, serverLabel, LongTermKeys.label] · grind" data-source="Examples%2FSignedDH%2FSecurityTheorems.lean&amp;line=57">
+  <table class="match">
+    <thead><tr><th>known</th><th>unfolds to</th><th>outcome</th></tr></thead>
+    <tbody>
+      <tr data-cue="The label of k is the join|A join is corrupt"><td><code>k.label = clientLabel ⊔ serverLabel</code><br><code>(k.label).isCorrupt</code></td><td><code>(clientLabel client xPk).isCorrupt ∨ (serverLabel server yPk).isCorrupt</code><br><small>a join is corrupt iff one side is</small></td><td rowspan="1"></td></tr>
+      <tr data-cue="The client label is corrupt|Those are outcomes two and three"><td><code>(clientLabel client xPk).isCorrupt tr</code></td><td><code>ClientEphemeralStateCompromised client xPk tr</code></td><td><b>2</b></td></tr>
+      <tr data-cue="The server label, when|Those are outcomes two and three"><td><code>(serverLabel server yPk).isCorrupt tr</code></td><td><code>ServerEphemeralStateCompromised server yPk tr</code></td><td><b>3</b></td></tr>
+      <tr data-cue="The other case of the invariant"><td><code>∃ spk, (LongTermKeys.label … server spk).isCorrupt</code><br><small>case B</small></td><td><code>∃ spk, LongTermKeyCompromised "SignedDH PKI" server spk tr_before</code></td><td><b>1</b></td></tr>
+    </tbody>
+  </table>
+  <p class="under" data-cue="Every case lands">Label at the prefix equals label at the full trace (labels are stable once set), so case A's equation applies to <code>k.label tr</code>. Every branch is a disjunct of the goal, and <code>grind</code> closes it.</p>
+</article>
+
+<article class="step" data-step="recap" data-title="Three facts, one theorem" data-eyebrow="RECAP · AND HOW TO FIND IT IN THE TREE" data-source="Examples%2FSignedDH%2FSecurityTheorems.lean&amp;line=52">
+  <ol class="facts">
+    <li data-cue="Reachable traces satisfy the invariant"><b>Reachable ⇒ invariant.</b> One induction in the library replaces reasoning about arbitrary executions.</li>
+    <li data-cue="The invariant at the finish event"><b>The event invariant pins the label of k.</b> Either both ephemeral states guard k, or the server's signing key was already corrupt.</li>
+    <li data-cue="anything the attacker knows has a corrupt label"><b>Attacker-known ⇒ corrupt label.</b> The least-fixpoint closure replaces reasoning about arbitrary attacker computations.</li>
+  </ol>
+  <table class="treemap">
+    <thead><tr><th>tactic</th><th>row in the compiled proof tree</th></tr></thead>
+    <tbody>
+      <tr data-cue="the first lemma application is the apply"><td><code>apply …</code></td><td>the first application: <code>apply_Reachable_implies_Invariant fun tr => …</code></td></tr>
+      <tr data-cue="the function with four parameters"><td><code>intro tr h_trinv h_pub h_ev</code></td><td>the <code>fun</code> with four parameters</td></tr>
+      <tr data-cue="the let is the have"><td><code>have := …</code></td><td>the <code>let this : EventInv.invariant …</code></td></tr>
+      <tr data-cue="the generated helper at the bottom"><td><code>simp · simp_all · grind</code></td><td>the generated helper <code>client_secrecy._proof_1_5</code></td></tr>
+    </tbody>
+  </table>
+  <p class="under" data-cue="If you open it from here"><a class="cta" href="proof.html">Open the compiled proof tree →</a></p>
+</article>
+
+</section>
+
+<aside class="notes">
+  <p class="eyebrow" id="eyebrow"></p>
+  <h1 id="title"></h1>
+  <p class="transcript" id="transcript"></p>
+  <div class="script" aria-label="The tactic script">
+    <div class="script-line" data-lines="statement outcomes intro"><code><span class="kw">theorem</span> client_secrecy … := <span class="kw">by</span></code></div>
+    <div class="script-line" data-lines="apply problem"><code>  apply Trace.apply_Reachable_implies_Invariant</code></div>
+    <div class="script-line" data-lines="intro-names"><code>  intro tr h_trinv h_pub h_ev</code></div>
+    <div class="script-line" data-lines="have"><code>  have := Trace.EventLoggedAt_imp_EventInv _ _ _ h_trinv h_ev</code></div>
+    <div class="script-line" data-lines="simp"><code>  simp [ProtocolEvent.EventInv.invariant] at this</code></div>
+    <div class="script-line" data-lines="publishable grind"><code>  simp_all [clientLabel, serverLabel, LongTermKeys.label]</code></div>
+    <div class="script-line" data-lines="publishable grind recap"><code>  grind</code></div>
+  </div>
+  <a id="source-link" class="source-link" target="_blank" rel="noopener">Open this in the source browser ↗</a>
+</aside>
+</main>
+
+<footer class="controls">
+  <button id="prev" aria-label="Previous step" title="Previous (←)">◀</button>
+  <button id="play" class="play" aria-label="Play narration" title="Play / pause (space)">▶</button>
+  <button id="next" aria-label="Next step" title="Next (→)">▶</button>
+  <div class="progress"><span id="counter"></span><div class="dots" id="dots" role="tablist"></div><span id="time" class="time"></span></div>
+  <label class="toggle"><input type="checkbox" id="autoplay" autocomplete="off" checked> <span class="long">auto-advance</span><span class="short">auto</span></label>
+  <label class="toggle"><input type="checkbox" id="voice" autocomplete="off" checked> <span class="long">voice</span><span class="short">voice</span></label>
+  <span class="hint">← → space</span>
+</footer>
+<audio id="audio" preload="auto"></audio>
+</body></html>

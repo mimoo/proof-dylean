@@ -7,6 +7,8 @@ import json
 import pathlib
 import re
 import shutil
+import sys
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import subprocess
 import sys
 
@@ -236,6 +238,9 @@ def build(source, output, skip_lean=False):
     for asset in (ROOT/'web').iterdir():
         if asset.is_file():
             shutil.copy2(asset, output/asset.name)
+        elif asset.is_dir():
+            # e.g. web/walkthrough/: narration audio and timings for walkthrough.html
+            shutil.copytree(asset, output/asset.name, dirs_exist_ok=True)
     proof_out = output/'proofs'
     proof_out.mkdir(exist_ok=True)
     for old in proof_out.glob('*.js'):
@@ -260,6 +265,11 @@ def build(source, output, skip_lean=False):
             f['asset'] = 'library/' + asset
             (output/f['asset']).write_text('Object.assign(window.DYLEAN_DATA.files[' + json.dumps(path) + '],' + json.dumps(dict(text=text, refs=refs), ensure_ascii=False, separators=(',', ':')) + ');\n')
     (output/'data.js').write_text('window.DYLEAN_DATA=' + json.dumps(data, ensure_ascii=False, separators=(',', ':')) + ';\n')
+    # The proof toolkit page: every repository declaration with resolved references, plus the curated manifest.
+    import toolkit
+    _, missing = toolkit.write(output, data)
+    if missing:
+        raise SystemExit('toolkit manifest entries not found: ' + ', '.join(missing))
     (output/'build-info.json').write_text(json.dumps(data['meta'], indent=2) + '\n')
     shutil.copy2(source/'LICENSE', output/'SOURCE-LICENSE.txt')
     license_path = sysroot/'LICENSE'
