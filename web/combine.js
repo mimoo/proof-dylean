@@ -50,11 +50,11 @@
 
   // Invocation panels: list what the compiler attributes to the #combine span, grouped by the helper that wrote it.
   const classify=n=>{
-    const last=n.split('.').slice(-1)[0], tail=n.replace(/^DY\.Example\.SignedDH\./,'');
-    if(/^wfInstInternal/.test(last)) return ['typeclass','combineTypeclass: per-index instance'];
-    if(/^wfInst/.test(last)) return ['typeclass','combineTypeclass: instance for the combination'];
-    if(/^inst\._@/.test(tail)||/^inst$/.test(last)) return ['anon','mkHasStep / mkHasCombine: anonymous instances'];
-    if(/^inst[A-Z]/.test(last)) return ['toplevel','+toplevel: named global instances'];
+    const tail=n.replace(/^DY\.Example\.SignedDH\./,'');  // hygienic names end in ._@.<module>…, so test the head
+    if(/^wfInstInternal(\.|$)/.test(tail)) return ['typeclass','combineTypeclass: per-index instance'];
+    if(/^wfInst(\.|$)/.test(tail)) return ['typeclass','combineTypeclass: instance for the combination'];
+    if(/^inst(\._@|$)/.test(tail)) return ['anon','mkHasStep / mkHasCombine: anonymous instances'];
+    if(/^inst[A-Z]/.test(tail)) return ['toplevel','+toplevel: named global instances'];
     if(/\.internal$/.test(n)) return ['explicit','combineExplicit: the Fin-indexed family'];
     return ['explicit','combineExplicit: the combined X'];
   };
