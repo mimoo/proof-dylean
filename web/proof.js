@@ -39,7 +39,7 @@
   }
   function sourceURL(name) {
     const source = P.declarations[name]?.source;
-    return source ? 'index.html#'+new URLSearchParams({file:source.file,line:String(source.line),symbol:source.symbol}) : null;
+    return source ? 'source.html#'+new URLSearchParams({file:source.file,line:String(source.line),symbol:source.symbol}) : null;
   }
   function nameHTML(name, full = false, label = null) {
     const url = sourceURL(name), d = P.declarations[name];

@@ -8,7 +8,7 @@
   const curated=new Map(); // declaration id → manifest entry
   T.categories.forEach(c=>c.items.forEach(it=>{ if(!curated.has(it.id)) curated.set(it.id,it); }));
   const short=n=>n.replace(/^DY\.Example\.SignedDH\./,'').replace(/^DY\./,'').replace(/\._@\..*$/,' (hygienic instance)');
-  const srcHref=(file,line)=>'index.html#'+new URLSearchParams({file,line:String(line)});
+  const srcHref=(file,line)=>'source.html#'+new URLSearchParams({file,line:String(line)});
   const KW=/\b(theorem|def|instance|class|structure|inductive|abbrev|where|fun|match|with|let|have|by|intro|apply|exact|simp|simp_all|grind|unfold|step|split|if|then|else|do|return|public|private|protected|variable|namespace|end|open|section|in|at|deriving|macro|syntax|opaque|noncomputable|mutual)\b/g;
 
   // Turn a declaration's source into HTML, wrapping each reference in a clickable span.

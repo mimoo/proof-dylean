@@ -2,7 +2,7 @@
 
 A local fork of `../browsable-dylean` with an expandable viewer for **actual compiled Lean proof terms**.
 
-Open **[dist/proof.html](dist/proof.html)** directly, or visit `http://localhost:4174/proof.html` after running:
+The site's home page, **[dist/index.html](dist/index.html)**, links to the four ways of reading the proof: the guided walkthrough, the proof toolkit, the compiled proof tree, and the source browser (now at `source.html`). Open **[dist/proof.html](dist/proof.html)** directly, or visit `http://localhost:4174/` after running:
 
 ```sh
 python3 -m http.server 4174 --bind 127.0.0.1 --directory dist
@@ -38,14 +38,14 @@ Why does the argument stop? DyLean defines attacker knowledge as a **least fixpo
 
 To regenerate both pages, run `python3 scripts/build.py` (or `npm run build`). The proof export is cached by source content, toolchain, and exporter version. `--skip-lean` still requires fresh compiler indexes. To change the starting proofs, edit `seeds` in `scripts/ExportProofs.lean`; the build discovers their dependencies and source files automatically. `dist/build-info.json` identifies the source snapshot. `npm test` checks graph closure, binder scope, source destinations, generated helper bodies, offline loading, UI expansion, local context, and source-browser navigation.
 
-The existing source browser remains at **[dist/index.html](dist/index.html)**. The original source-browser documentation follows.
+The existing source browser remains at **[dist/source.html](dist/source.html)**. The original source-browser documentation follows.
 
 ---
 
 
 A mobile-friendly, fully static browser for the Lean code in `../dylean`.
 
-**Open `dist/index.html` directly**, or serve `dist/` with any static web server. The generated snapshot is included. No backend, API, CDN, build tools, or Lean installation is required to browse it.
+**Open `dist/source.html` directly**, or serve `dist/` with any static web server. The generated snapshot is included. No backend, API, CDN, build tools, or Lean installation is required to browse it.
 
 ## Generate a fresh static website
 
@@ -104,7 +104,7 @@ Everything runs in the browser, including the search and hierarchy views. Additi
 
 ## Develop and verify
 
-Edit `web/index.html`, `web/style.css`, and `web/app.js`; edit `scripts/build.py` for indexing changes. Regenerate `dist/` after editing. The generated directory is intentionally tracked so the repository is also a ready-to-host artifact.
+Edit `web/source.html`, `web/style.css`, and `web/app.js`; edit `scripts/build.py` for indexing changes. Regenerate `dist/` after editing. The generated directory is intentionally tracked so the repository is also a ready-to-host artifact.
 
 ```sh
 npm ci       # installs jsdom for tests only; Node 22.13+ recommended

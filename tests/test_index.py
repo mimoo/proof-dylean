@@ -79,7 +79,7 @@ class IndexTests(unittest.TestCase):
         self.assertTrue((ROOT/'dist'/f['asset']).is_file())
 
     def test_static_entrypoint_and_relative_assets(self):
-        html = (ROOT/'dist/index.html').read_text()
+        html = (ROOT/'dist/source.html').read_text()
         for asset in ['app.js', 'data.js', 'style.css']:
             self.assertIn('"' + asset + '"', html)
             self.assertTrue((ROOT/'dist'/asset).is_file())

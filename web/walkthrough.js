@@ -112,7 +112,7 @@
     $('#eyebrow').textContent=s.dataset.eyebrow;
     $('#title').textContent=s.dataset.title;
     $('#counter').textContent=(i+1)+' / '+steps.length;
-    $('#source-link').href='index.html#file='+s.dataset.source;
+    $('#source-link').href='source.html#file='+s.dataset.source;
     [...dots.children].forEach((d,j)=>{d.classList.toggle('active',j===i);d.classList.toggle('done',j<i);d.setAttribute('aria-selected',j===i)});
     document.querySelectorAll('.script-line').forEach(l=>l.classList.toggle('active',l.dataset.lines.split(' ').includes(id)));
     $('#prev').disabled=i===0; $('#next').disabled=i===steps.length-1;

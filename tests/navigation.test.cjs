@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const {JSDOM} = require('jsdom');
 const root = path.resolve(__dirname, '..');
-const dom = new JSDOM(fs.readFileSync(path.join(root, 'dist/index.html'), 'utf8'), {url:'https://example.test/subpath/', runScripts:'outside-only', pretendToBeVisual:true});
+const dom = new JSDOM(fs.readFileSync(path.join(root, 'dist/source.html'), 'utf8'), {url:'https://example.test/subpath/', runScripts:'outside-only', pretendToBeVisual:true});
 const w = dom.window;
 w.URL.createObjectURL = () => 'blob:test'; w.URL.revokeObjectURL = () => {};
 w.matchMedia = () => ({matches:false});
@@ -96,7 +96,7 @@ test('recursive declarations terminate hierarchy cycles', async () => {
 });
 
 test('standalone file:// export supports definition jumps and Back', async () => {
-  const offline = new JSDOM(fs.readFileSync(path.join(root, 'dist/index.html'), 'utf8'), {url:'file:///tmp/dylean/index.html',runScripts:'outside-only',pretendToBeVisual:true});
+  const offline = new JSDOM(fs.readFileSync(path.join(root, 'dist/source.html'), 'utf8'), {url:'file:///tmp/dylean/source.html',runScripts:'outside-only',pretendToBeVisual:true});
   const v = offline.window;
   v.URL.createObjectURL = () => 'blob:offline'; v.URL.revokeObjectURL = () => {};
   v.matchMedia = () => ({matches:false});
