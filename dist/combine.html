@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101923"><title>DyLean · How #combine works</title><link rel="icon" href="data:,">
+<meta name="description" content="What DyLean's #combine macro writes for you, why the framework needs it, and how it is implemented, from the syntax to the generated declarations.">
+<link rel="stylesheet" href="combine.css"><link rel="stylesheet" href="cards.css"><script defer src="toolkit-data.js"></script><script defer src="cards.js"></script><script defer src="combine.js"></script></head>
+<body>
+<header><a class="brand" href="index.html"><b>δ</b> DyLean <span>/ how #combine works</span></a><nav class="header-links"><a href="toolkit.html">Proof toolkit</a><a href="proof.html">Compiled proof tree</a><a href="source.html" target="_blank" rel="noopener">Source browser ↗</a></nav></header>
+
+<div class="layout">
+<nav class="toc" aria-label="Contents">
+  <p class="eyebrow">CONTENTS</p>
+  <a href="#why">1 · The problem it solves</a>
+  <a href="#alacarte" class="sub">Data types à la carte</a>
+  <a href="#has" class="sub">Has and HasStep</a>
+  <a href="#usage">2 · What you write</a>
+  <a href="#expansion">3 · One expansion, by hand</a>
+  <a href="#impl">4 · The implementation</a>
+  <a href="#syntax" class="sub">Syntax</a>
+  <a href="#dispatch" class="sub">Dispatch to #combine_one</a>
+  <a href="#helpers" class="sub">The four helpers</a>
+  <a href="#rules" class="sub">The mechanism rules</a>
+  <a href="#issues">5 · Two Lean issues</a>
+  <a href="#recipe">6 · Adding a mechanism</a>
+</nav>
+
+<article>
+  <p class="eyebrow">FRAMEWORK INTERNALS</p>
+  <h1>What <code>#combine</code> writes for you, and how</h1>
+  <p class="lede">DyLean is built from independent pieces: one file per cryptographic primitive, one per kind of trace entry, one per protocol step. A protocol assembles the pieces it needs. <b><code>#combine</code> is the command that does the assembling</b>: given a list of pieces, it generates the sum type, the dispatching instances, and the inclusion proofs that the core of DyLean expects to find. The SignedDH example calls it eight times and gets 113 declarations back. This page explains what those declarations are and walks through the macro that produces them, from its syntax down to the two Lean issues it works around.</p>
+  <p class="muted" style="font-size:14px">Every declaration mentioned here can be opened in place. Cards show the real source from <code>../dylean</code>; names inside a card open the referenced declaration nested underneath.</p>
+
+  <section id="why">
+    <h2>1 · The problem it solves</h2>
+    <p>In the original DY<sup>*</sup>, the type of symbolic byte strings is one fixed inductive with one constructor per primitive, the invariant on bytes is one fixed recursive function over it, and every proof about the invariant does a case split over every constructor. DyLean wants three things that this monolith cannot give. They are stated in the module documentation of <code>DY/ALaCarte/Basic.lean</code>:</p>
+    <div class="goals">
+      <div class="goal"><b>New primitives without forking</b>A protocol may need a primitive DyLean did not anticipate. Users must be able to construct <code>Bytes</code> from the primitives they need.</div>
+      <div class="goal"><b>Chosen security assumptions</b>The invariant for a primitive encodes an assumption about it, such as whether discrete logarithms are hard. Users must be able to pick a different one.</div>
+      <div class="goal"><b>One file per primitive</b>Instead of "all constructors, then all invariants, then all proofs", a file should say "here is Concat, here is its invariant, here are its proofs".</div>
+    </div>
+    <p>The same pressure applies to trace entries. A trace holds network messages, random values, protocol events, stored states and long-term keys, and a protocol decides which event type and which state types it uses. So the entry type is also assembled per protocol, and so is the attacker's base knowledge, the per-entry invariant, and the list of steps that count as reachable.</p>
+
+    <h3 id="alacarte">Data types à la carte, in one paragraph</h3>
+    <p>The construction follows Swierstra's "Data types à la carte". Rather than a closed inductive, each piece is a <em>functor</em>: a type constructor whose parameter stands for "the recursive position". <code>Hash</code> contributes <code>hash : t → Hash t</code>, <code>Concat</code> contributes <code>concat : t → t → Concat t</code>, and so on. A family of such functors indexed by <code>Fin n</code> is summed by <code>FunctorUnion</code>, which is just a pair of an index and a value of that functor. Taking the fixpoint of the union gives the inductive type you wanted, and the fixpoint is formed by <code>ContainerFor</code>, which packages the union into a representation Lean's positivity checker accepts. Every piece is then a <code>SubFunctor</code> of the union, with an injection and a partial projection.</p>
+    <div class="flow" aria-label="How Bytes is assembled">
+      <span class="label">Bytes for SignedDH</span>
+      <div class="stack"><span class="box">Random</span><span class="box">Literal</span><span class="box">Concat</span></div>
+      <div class="stack"><span class="box">Hash</span><span class="box">Signature</span><span class="box">DiffieHellman</span></div>
+      <span class="arr">→<small>Fin 6 →</small></span>
+      <span class="box hot">BytesFunctor.combine SubF.internal<small>= FunctorUnion over the six functors</small></span>
+      <span class="arr">→<small>fixpoint</small></span>
+      <span class="box hot">Bytes<small>= ContainerFor BytesF</small></span>
+    </div>
+    <p>Trace entries do not need a fixpoint, only a sum, so their combinator is a plain dependent pair:</p>
+    <div class="cards"><div data-card="DY.ExecTraceTypes.combine"></div></div>
+    <p>The other combinators have the same shape with different payloads: <code>BytesFunctor.combine</code> is the functor union above, <code>ReachabilityConfig.combine</code> makes the step input a pair of a config index and that config's input, and the combinators for lengths, invariants, attacker rules and proofs are indexed families of partial functions and partial proofs that the à-la-carte module knows how to run over a union.</p>
+    <div class="cards"><div data-card="DY.BytesFunctor.combine"></div><div data-card="DY.ReachabilityConfig.combine"></div></div>
+
+    <h3 id="has">Has and HasStep: how a piece finds itself in the whole</h3>
+    <p>Framework code never mentions a protocol's concrete entry type. It is written against a global one, <code>ExecTrace.Entry</code>, and asks for an instance <code>ExecTraceTypes.Has T</code> whenever it wants to store or find an entry of some local type <code>T</code>. That instance is found by typeclass search along a chain of single steps:</p>
+    <div class="triangle" aria-label="Has from HasStep">
+      <span class="box">Network.ExecEntryT<br><small class="muted">a piece</small></span>
+      <span class="edge">HasStep →<br>generic, index 0</span>
+      <span class="box hot">ExecTraceTypes.combine ExecEntryT.internal<br><small class="muted">the sum</small></span>
+      <span></span><span></span>
+      <span class="edge">Has ↓<br>top-level instance: the sum <em>is</em> the global entry type</span>
+      <span class="edge conclusion">⇒ Has Network.ExecEntryT, by the generic instance "HasStep T U and Has U give Has T"</span>
+    </div>
+    <div class="cards"><div data-card="DY.ExecTraceTypes.HasStep"></div><div data-card="DY.instExecTraceTypesCombineHasStep"></div><div data-card="DY.instExecTraceTypesHasStep"></div></div>
+    <p>So, for each mechanism, the protocol has to provide: the <code>Fin n</code>-indexed family, the combined value, one <code>HasStep</code> instance per piece that names the piece by its index, the top-level instance saying the combination is the global one, and for mechanisms that carry typeclass evidence rather than data, an instance that dispatches to each piece's instance. That is between ten and thirty declarations per mechanism, all mechanical, all wrong in boring ways if written by hand. <code>#combine</code> writes them.</p>
+  </section>
+
+  <section id="usage">
+    <h2>2 · What you write</h2>
+    <p>SignedDH assembles itself in <code>Examples/SignedDH/Instance.lean</code> with six commands, plus one in the specification for the reachability config and one in the proof for the reachability theorem. Each command names one or more <em>targets</em> after <code>into</code> and the <em>sources</em> after <code>from</code>. A source is an identifier followed by arguments, so <code>ProtocolEvent SignedDHEvent</code> means "the protocol-event mechanism instantiated at this event type" and <code>LongTermKeys "SignedDH PKI"</code> names a PKI. <code>+toplevel</code> additionally declares the result to be <em>the</em> global one for this protocol.</p>
+    <p>Open a command to see the real list of declarations the compiler attributes to it. The names are the ones you will meet in error messages and in the proof tree.</p>
+
+    <details class="invocation" data-invocation="Examples/SignedDH/Instance.lean:11"><summary><code>#combine +toplevel into BytesFunctor, BytesLength, attackerKnowledge from</code> six primitives <span class="badge">+toplevel</span><span class="where">Instance.lean:11</span></summary><div class="inv-body"><pre class="lean-static">#combine +toplevel into BytesFunctor, BytesLength, attackerKnowledge from
+  Random, Literal, Concat, Hash, Signature, DiffieHellman,</pre><div class="inv-cols"><div><h5>what it establishes</h5><ul><li><code>SubF</code>: the functor union, and <code>Bytes</code> through the <code>BytesFunctor</code> instance</li><li><code>SubF.length</code>: the length function over the union</li><li><code>attackerKnowledge</code>: the union of the six primitives' attacker rules, the closure operations of the least fixpoint</li></ul></div><div class="generated"></div></div></div></details>
+
+    <details class="invocation" data-invocation="Examples/SignedDH/Instance.lean:21"><summary><code>#combine +toplevel into ExecEntryT, baseAttackerKnowledge from</code> seven entry kinds <span class="badge">+toplevel</span><span class="where">Instance.lean:21</span></summary><div class="inv-body"><pre class="lean-static">#combine +toplevel into ExecEntryT, baseAttackerKnowledge, from
+  Network, Random,
+  ProtocolEvent SignedDH.SignedDHEvent,
+  PersistentLocalState.CompromisableState SignedDH.ClientInitiateState,
+  PersistentLocalState.CompromisableState SignedDH.ClientFinishState,
+  PersistentLocalState.CompromisableState SignedDH.ServerFinishState,
+  LongTermKeys "SignedDH PKI",</pre><div class="inv-cols"><div><h5>what it establishes</h5><ul><li><code>ExecEntryT</code>: the execution trace's entry type, a 7-way sum</li><li><code>baseAttackerKnowledge</code>: what each kind of entry hands the attacker directly, for example a sent message</li></ul></div><div class="generated"></div></div></div></details>
+
+    <details class="invocation" data-invocation="Examples/SignedDH/Instance.lean:35"><summary><code>#combine +toplevel into ProofEntryT from</code> the same seven <span class="badge">+toplevel</span><span class="where">Instance.lean:35 · expanded by hand in section 3</span></summary><div class="inv-body"><pre class="lean-static">#combine +toplevel into ProofEntryT, from
+  Network, Random,
+  ProtocolEvent SignedDH.SignedDHEvent,
+  PersistentLocalState.CompromisableState SignedDH.ClientInitiateState,
+  PersistentLocalState.CompromisableState SignedDH.ClientFinishState,
+  PersistentLocalState.CompromisableState SignedDH.ServerFinishState,
+  LongTermKeys "SignedDH PKI",</pre><div class="inv-cols"><div><h5>what it establishes</h5><ul><li><code>ProofEntryT</code>: the proof trace's entry type, with ghost fields such as labels</li><li><code>ErasableProofEntry ExecEntryT ProofEntryT</code>: erasing a combined proof entry gives the combined exec entry, index by index</li></ul></div><div class="generated"></div></div></div></details>
+
+    <details class="invocation" data-invocation="Examples/SignedDH/Instance.lean:48"><summary><code>#combine +toplevel into BytesInvariants, BytesInvariantsProofs from</code> six primitives <span class="badge">+toplevel</span><span class="where">Instance.lean:48</span></summary><div class="inv-body"><pre class="lean-static">#combine +toplevel into BytesInvariants, BytesInvariantsProofs from
+  Random, Literal, Concat, Hash, Signature, DiffieHellman,</pre><div class="inv-cols"><div><h5>what it establishes</h5><ul><li><code>invariants</code>: label, usage, well-formedness and invariant rules for every constructor of <code>Bytes</code>, assembled from the per-primitive rules</li><li><code>invariantsProofs</code>: the monotonicity proofs (<code>_later</code>) for those rules. This target generates <em>theorems</em>, not defs</li></ul></div><div class="generated"></div></div></div></details>
+
+    <details class="invocation" data-invocation="Examples/SignedDH/Instance.lean:58"><summary><code>#combine +toplevel into SubTraceInvariant, SubBaseAttackerKnowledgeTheorem from</code> seven entry kinds <span class="badge">+toplevel</span><span class="where">Instance.lean:58</span></summary><div class="inv-body"><pre class="lean-static">#combine +toplevel into SubTraceInvariant, SubBaseAttackerKnowledgeTheorem, from
+  Network, Random, ProtocolEvent SignedDH.SignedDHEvent,
+  PersistentLocalState.CompromisableState …ClientInitiateState, …ClientFinishState, …ServerFinishState,
+  LongTermKeys "SignedDH PKI",</pre><div class="inv-cols"><div><h5>what it establishes</h5><ul><li>the per-entry invariant of the combined entry type: the global <code>Trace.Invariant</code> is defined from it</li><li>the theorem that base attacker knowledge is publishable, combined over entry kinds. Its rule rewrites itself into an "expert mode" rule after adding instance binders, see section 4</li></ul></div><div class="generated"></div></div></div></details>
+
+    <details class="invocation" data-invocation="Examples/SignedDH/Instance.lean:70"><summary><code>#combine +toplevel into SubAttackerKnowledgeTheorem from</code> six primitives <span class="badge">+toplevel</span><span class="where">Instance.lean:70</span></summary><div class="inv-body"><pre class="lean-static">#combine +toplevel into SubAttackerKnowledgeTheorem from
+  Random, Literal, Concat, Hash, Signature, DiffieHellman,</pre><div class="inv-cols"><div><h5>what it establishes</h5><ul><li>the per-primitive "attacker rule preserves publishability" proofs, combined. This is the closure half of <code>AttackerKnows_implies_Publishable</code></li></ul></div><div class="generated"></div></div></div></details>
+
+    <details class="invocation" data-invocation="Examples/SignedDH/Specification.lean:360"><summary><code>#combine into ReachabilityConfig from</code> eight steps <span class="where">Specification.lean:360</span></summary><div class="inv-body"><pre class="lean-static">#combine into ReachabilityConfig from
+  Network, LongTermKeys "SignedDH PKI",
+  Client.initiate, Server.receive, Client.finish,
+  ClientInitiateState.compromise, ClientFinishState.compromise, ServerFinishState.compromise,</pre><div class="inv-cols"><div><h5>what it establishes</h5><ul><li><code>reachability</code>: the config that <code>client_secrecy</code> quantifies over. Its input is a pair of a step index and that step's input</li><li>No <code>+toplevel</code>: there is no global "the reachability config", theorems name it explicitly</li></ul></div><div class="generated"></div></div></div></details>
+
+    <details class="invocation" data-invocation="Examples/SignedDH/Proof.lean:379"><summary><code>#combine into ReachabilityTheorem from</code> the same eight <span class="where">Proof.lean:379</span></summary><div class="inv-body"><pre class="lean-static">#combine into ReachabilityTheorem from
+  Network, LongTermKeys "SignedDH PKI",
+  Client.initiate, Server.receive, Client.finish,
+  ClientInitiateState.compromise, ClientFinishState.compromise, ServerFinishState.compromise,</pre><div class="inv-cols"><div><h5>what it establishes</h5><ul><li><code>ReachableImpliesInvariant reachability</code>, by dispatching to the eight <code>ReachableImpliesInvariant</code> instances registered just above it, one per step's Hoare triple</li><li>Only two declarations: this target is pure typeclass evidence, no data</li></ul></div><div class="generated"></div></div></div></details>
+  </section>
+
+  <section id="expansion">
+    <h2>3 · One expansion, by hand</h2>
+    <p>Take the third command, <code>#combine +toplevel into ProofEntryT from</code> the seven entry kinds. The compiler attributes 14 declarations to it. Here is where each comes from. Generated names are highlighted; <code>wfInst</code>, <code>wfInstInternal</code> and <code>inst</code> are the macro's own choices and get hygienic suffixes, which is why they appear as <code>inst._@…</code> in the lists above.</p>
+
+    <div class="stepcard"><h4><span class="n">1</span>Split by target <span class="helper">macro_rules for #combine</span></h4><p>The outer command is only a loop. For every target after <code>into</code> it emits one <code>#combine_one</code> command carrying the same options, binders and sources. Here there is one target, so one command:</p><pre class="lean-static">#combine_one +toplevel ProofEntryT from Network, Random, ProtocolEvent SignedDHEvent, …, LongTermKeys "SignedDH PKI"</pre></div>
+
+    <div class="stepcard"><h4><span class="n">2</span>Find the rule for this target <span class="helper">macro_rules for #combine_one … ProofEntryT</span></h4><p>Lean picks the <code>macro_rules</code> whose pattern names the target identifier <code>ProofEntryT</code>. That rule lives next to the mechanism it serves, in <code>DY/Trace/Invariant.lean</code>, and calls the four helpers below in turn. Open it to follow along:</p><div class="cards"><div data-card-at="DY/Trace/Invariant.lean:456" data-rule data-label="the ProofEntryT rule"></div></div></div>
+
+    <div class="stepcard hot"><h4><span class="n">3</span>The data <span class="helper">combineExplicit</span></h4><p>Two definitions. The <em>internal</em> one is the <code>Fin 7</code>-indexed family, one match arm per source in the order written, with the source's name suffixed by the target name. The second applies the mechanism's combinator to it.</p><pre class="lean-static">@[expose] public
+def <mark>ProofEntryT.internal</mark> : (id : Fin 7) → Type := fun
+  | 0 => Network.ProofEntryT
+  | 1 => Random.ProofEntryT
+  | 2 => ProtocolEvent.ProofEntryT SignedDHEvent
+  | 3 => PersistentLocalState.CompromisableState.ProofEntryT ClientInitiateState
+  | 4 => PersistentLocalState.CompromisableState.ProofEntryT ClientFinishState
+  | 5 => PersistentLocalState.CompromisableState.ProofEntryT ServerFinishState
+  | 6 => LongTermKeys.ProofEntryT "SignedDH PKI"
+  | ⟨_+7, _⟩ => False.elim (by grind)   -- see section 5: lean4#9292
+
+@[expose, instance_reducible] public
+def <mark>ProofEntryT</mark> : Type := ProofTraceTypes.combine ProofEntryT.internal</pre></div>
+
+    <div class="stepcard hot"><h4><span class="n">4</span>The evidence <span class="helper">combineTypeclass</span></h4><p>Proof entries must erase to execution entries. Each source already has an <code>ErasableProofEntry</code> instance for its own pair of types, so the macro writes one instance over the index that dispatches to them with <code>inferInstanceAs</code>, then one instance for the combined pair, which the generic instance for <code>combine</code> derives from the indexed one.</p><pre class="lean-static">public instance <mark>wfInstInternal</mark> : ∀ id, ErasableProofEntry (ExecEntryT.internal id) (ProofEntryT.internal id)
+  | 0 => inferInstanceAs (ErasableProofEntry Network.ExecEntryT Network.ProofEntryT)
+  | 1 => inferInstanceAs (ErasableProofEntry Random.ExecEntryT Random.ProofEntryT)
+  | …
+  | ⟨_+7, _⟩ => False.elim (by grind)
+
+public instance <mark>wfInst</mark> : ErasableProofEntry ExecEntryT ProofEntryT :=
+  inferInstanceAs (ErasableProofEntry (ExecTraceTypes.combine ExecEntryT.internal) (ProofTraceTypes.combine ProofEntryT.internal))</pre><p>The last line is the whole trick of the typeclass helpers. <code>ExecEntryT</code> is <em>definitionally</em> the combination, so stating the instance at the combination and coercing it with <code>inferInstanceAs</code> lets the generic instance for <code>combine</code> fire.</p></div>
+
+    <div class="stepcard hot"><h4><span class="n">5</span>The inclusions <span class="helper">mkHasStep</span></h4><p>One instance per source. Each says the source's entry type steps into the combined one, and proves it by pointing at the generic instance for <code>combine</code> at the right index.</p><pre class="lean-static">public instance <mark>inst</mark> : ProofTraceTypes.HasStep Network.ProofEntryT ProofEntryT :=
+  inferInstanceAs (ProofTraceTypes.HasStep (ProofEntryT.internal 0) (ProofTraceTypes.combine ProofEntryT.internal))
+public instance <mark>inst</mark> : ProofTraceTypes.HasStep Random.ProofEntryT ProofEntryT :=
+  inferInstanceAs (ProofTraceTypes.HasStep (ProofEntryT.internal 1) (ProofTraceTypes.combine ProofEntryT.internal))
+-- … five more, indices 2 to 6</pre></div>
+
+    <div class="stepcard"><h4><span class="n">6</span>Make it global <span class="helper">+toplevel, rule-specific</span></h4><p>Only with <code>+toplevel</code>. The rule declares the combination to be the protocol's proof-entry type and gives it the trivial <code>Has</code> instance, so the chain in section 1 closes:</p><pre class="lean-static">public instance : ProofTraceTypes where ProofT := ProofEntryT      -- named instProofTraceTypes_examples by Lean
+public instance : ProofTraceTypes.Has ProofEntryT := inferInstanceAs (ProofTraceTypes.Has ProofTrace.Entry)</pre></div>
+
+    <div class="stepcard"><h4><span class="n">7</span>The bridge <span class="helper">mkHasCombine</span></h4><p>Also only with <code>+toplevel</code>. It restates the <code>Has</code> instance at the unfolded combination, from the one at the name. Section 5 explains why Lean needs this nudge.</p><pre class="lean-static">public instance <mark>inst</mark> [ProofTraceTypes.Has ProofEntryT] : ProofTraceTypes.Has (ProofTraceTypes.combine ProofEntryT.internal) :=
+  inferInstanceAs (ProofTraceTypes.Has ProofEntryT)</pre></div>
+
+    <div class="callout"><b>Count.</b> 2 definitions + 2 erasability instances + 7 step instances + 2 top-level instances + 1 bridge = 14, which is what the compiler reports for that span above. The eight anonymous <code>inst</code> names are the seven steps and the bridge.</div>
+  </section>
+
+  <section id="impl">
+    <h2>4 · The implementation</h2>
+    <p>The macro is 323 lines in <code>DY/Meta/CombineMacro.lean</code>, plus one <code>macro_rules</code> block per mechanism in the file that defines the mechanism. It is an ordinary Lean <code>macro</code>, so everything happens by rewriting syntax to syntax in <code>MacroM</code>; nothing elaborates or inspects types. That is why it is simple, and also why its error messages arrive late, from the elaborator, when a generated declaration fails to typecheck.</p>
+    <div class="flow" aria-label="Pipeline">
+      <span class="box user">#combine +toplevel into A, B from s₁ … sₙ<small>user command</small></span>
+      <span class="arr">→<small>loop</small></span>
+      <span class="box">#combine_one +toplevel A from s₁ … sₙ<small>and the same for B</small></span>
+      <span class="arr">→<small>macro_rules by target</small></span>
+      <span class="box">the A rule<small>in the file that defines A</small></span>
+      <span class="arr">→<small>calls</small></span>
+      <div class="stack"><span class="box hot">combineExplicit</span><span class="box hot">combineTypeclass</span><span class="box hot">mkHasStep</span><span class="box hot">mkHasCombine</span></div>
+      <span class="arr">→</span>
+      <span class="box">mkNullNode [cmd, cmd, …]<small>declarations, elaborated normally</small></span>
+    </div>
+
+    <h3 id="syntax">Syntax</h3>
+    <p>Three syntax categories and two commands. A source is an identifier with trailing arguments, so arguments reach the generated code untouched. A target is an identifier with optional binders of its own. Trailing commas are allowed, which is why every invocation in SignedDH ends with one.</p>
+    <pre class="lean-static">declare_syntax_cat combine_from
+syntax ident term:arg* : combine_from                       -- e.g. ProtocolEvent SignedDHEvent
+
+declare_syntax_cat combine_into
+syntax ident bracketedBinder* : combine_into                -- e.g. ProofEntryT, or SubF (n : Nat)
+
+declare_syntax_cat combine_option
+syntax "+toplevel " : combine_option
+
+syntax "#combine_one " combine_option* combine_into " from " combine_from,*,? : command
+syntax "#combine " combine_option* bracketedBinder* " into " combine_into,*,? " from " combine_from,*,? : command</pre>
+
+    <h3 id="dispatch">Dispatch to <code>#combine_one</code></h3>
+    <p>The only rule defined for <code>#combine</code> itself concatenates the command's binders with each target's own binders and emits one <code>#combine_one</code> per target. Returning a <code>mkNullNode</code> of commands is how a Lean macro expands to several commands at once.</p>
+    <pre class="lean-static">macro_rules
+  | `(command| #combine $options:combine_option* $globalParams:bracketedBinder* into $targets,* from $sources,*) => do
+    let mut cmds := #[]
+    for target in targets.getElems do
+      let `(combine_into| $id:ident $localParams*) := target | panic! "??"
+      let params := globalParams ++ localParams
+      cmds := cmds.push (← `(command| #combine_one $options* $id:ident $params* from $sources,*))
+    return mkNullNode cmds</pre>
+    <p>There is no table of targets. <code>#combine_one</code> is dispatched by Lean's own macro mechanism: each mechanism adds a <code>macro_rules</code> whose pattern has its name in the target position, and Lean tries the rules until one matches. Adding a mechanism therefore means adding a rule, not editing the macro.</p>
+
+    <h3 id="helpers">The four helpers</h3>
+    <p>Each helper takes the binders, the sources and a small config of syntax builders, and returns an array of commands. The <code>makeSimple</code> constructors cover the common case where the config can be derived from a handful of names. Open each to see the quotations that produce the code in section 3.</p>
+    <div class="cards">
+      <div data-card="DY.Meta.CombineMacro.combineExplicit"></div>
+      <div data-card="DY.Meta.CombineMacro.CombineExplicitConfig"></div>
+      <div data-card="DY.Meta.CombineMacro.combineTypeclass"></div>
+      <div data-card="DY.Meta.CombineMacro.CombineTypeclassConfig"></div>
+      <div data-card="DY.Meta.CombineMacro.mkHasStep"></div>
+      <div data-card="DY.Meta.CombineMacro.HasStepConfig"></div>
+      <div data-card="DY.Meta.CombineMacro.mkHasCombine"></div>
+      <div data-card="DY.Meta.CombineMacro.explicitNameOfBracketedBinder"></div>
+      <div data-card="DY.Meta.CombineMacro.parseOptions"></div>
+    </div>
+    <p>Two details worth noticing in the source. Names are built with <code>modifyBase (· ++ config.name)</code>, so the source identifier <code>Network</code> becomes <code>Network.ProofEntryT</code> while keeping the source's position for error reporting through <code>mkIdentFrom</code>. And the generated instance names are created with <code>withFreshMacroScope</code>, which is what makes them hygienic: two expansions in the same namespace cannot collide, at the price of unreadable names.</p>
+
+    <h3 id="rules">The mechanism rules</h3>
+    <p>Seventeen rules exist today. The table says which helpers each uses and what <code>+toplevel</code> adds. Three patterns recur: a <em>data</em> mechanism uses <code>combineExplicit</code> plus <code>mkHasStep</code>, an <em>evidence</em> mechanism uses <code>combineTypeclass</code> alone, and a few rules exist only to rewrite into another rule with extra binders.</p>
+    <div class="legend"><span><span class="pill e">E</span> combineExplicit</span><span><span class="pill t">T</span> combineTypeclass</span><span><span class="pill s">S</span> mkHasStep</span><span><span class="pill c">C</span> mkHasCombine</span></div>
+    <table class="mech">
+      <thead><tr><th>target</th><th>produces</th><th>helpers</th><th>+toplevel adds</th><th></th></tr></thead>
+      <tbody>
+        <tr><td><code>BytesFunctor</code></td><td><code>SubF</code>, the functor union</td><td><span class="pill e">E</span><span class="pill t">T</span><span class="pill s">S</span></td><td><code>BytesFunctor</code>, <code>BytesFunctor.Has SubF</code></td><td><button data-open-rule="DY/Bytes/Basic.lean:419">rule</button></td></tr>
+        <tr><td><code>BytesLength</code></td><td><code>SubF.length</code></td><td><span class="pill e">E</span><span class="pill s">S</span></td><td><code>BytesLength</code> instances</td><td><button data-open-rule="DY/Bytes/Basic.lean:451">rule</button></td></tr>
+        <tr><td><code>attackerKnowledge</code></td><td><code>attackerKnowledge</code>, the attacker's closure rules</td><td><span class="pill e">E</span><span class="pill s">S</span></td><td><code>AttackerKnowledge</code>, <code>AttackerKnowledge.Has</code></td><td><button data-open-rule="DY/Bytes/AttackerKnowledge.lean:313">rule</button></td></tr>
+        <tr><td><code>attackerKnowledge'</code></td><td>same, over a given <code>SubF</code> rather than its own</td><td><span class="pill e">E</span><span class="pill s">S</span></td><td>ignored</td><td><button data-open-rule="DY/Bytes/AttackerKnowledge.lean:341">rule</button></td></tr>
+        <tr><td><code>BytesInvariants</code></td><td><code>invariants</code>: label, usage, well-formedness, invariant rules</td><td><span class="pill e">E</span><span class="pill s">S</span></td><td><code>BytesInvariants</code>, <code>BytesInvariants.Has</code></td><td><button data-open-rule="DY/Bytes/Invariants.lean:701">rule</button></td></tr>
+        <tr><td><code>BytesInvariantsProofs</code></td><td><code>invariantsProofs</code>, as theorems</td><td><span class="pill e">E</span></td><td><code>BytesInvariantsProofs</code></td><td><button data-open-rule="DY/Bytes/Invariants.lean:731">rule</button></td></tr>
+        <tr><td><code>SubAttackerKnowledgeTheorem</code></td><td>closure proofs: each attacker rule preserves publishability</td><td><span class="pill t">T</span></td><td><code>AttackerKnowledgeTheorem</code></td><td><button data-open-rule="DY/Bytes/AttackerKnowledgeTheorem.lean:88">rule</button></td></tr>
+        <tr><td><code>SubAttackerKnowledgeTheorem'</code></td><td>same, for <code>combine'</code></td><td><span class="pill t">T</span></td><td>ignored</td><td><button data-open-rule="DY/Bytes/AttackerKnowledgeTheorem.lean:113">rule</button></td></tr>
+        <tr><td><code>ExecEntryT</code></td><td><code>ExecEntryT</code>, the execution entry sum</td><td><span class="pill e">E</span><span class="pill s">S</span><span class="pill c">C</span></td><td><code>ExecTraceTypes</code>, <code>ExecTraceTypes.Has</code></td><td><button data-open-rule="DY/Trace/Basic.lean:386">rule</button></td></tr>
+        <tr><td><code>ProofEntryT</code></td><td><code>ProofEntryT</code> and erasability</td><td><span class="pill e">E</span><span class="pill t">T</span><span class="pill s">S</span><span class="pill c">C</span></td><td><code>ProofTraceTypes</code>, <code>ProofTraceTypes.Has</code></td><td><button data-open-rule="DY/Trace/Invariant.lean:456">rule</button></td></tr>
+        <tr><td><code>SubTraceInvariant</code></td><td>the per-entry invariant of the sum</td><td><span class="pill t">T</span><span class="pill s">S</span><span class="pill c">C</span></td><td><code>SubTraceInvariant ProofEntryT</code>, <code>TraceInvariant</code>, <code>TraceInvariant.Has</code></td><td><button data-open-rule="DY/Trace/Invariant.lean:501">rule</button></td></tr>
+        <tr><td><code>baseAttackerKnowledge</code></td><td>what each entry kind leaks</td><td><span class="pill e">E</span><span class="pill s">S</span></td><td><code>BaseAttackerKnowledge</code>, <code>BaseAttackerKnowledge.Has</code></td><td><button data-open-rule="DY/Trace/BaseAttackerKnowledge.lean:141">rule</button></td></tr>
+        <tr><td><code>SubBaseAttackerKnowledgeTheorem</code></td><td>rewrites to <code>__expertMode</code> after adding <code>Has</code> binders for the exec and proof entry types</td><td>→</td><td>passes through</td><td><button data-open-rule="DY/Trace/BaseAttackerKnowledgeTheorem.lean:128">rule</button></td></tr>
+        <tr><td><code>SubBaseAttackerKnowledgeTheorem__noExecHas</code></td><td>rewrites to <code>__expertMode</code> with only the proof-side binders</td><td>→</td><td>passes through</td><td><button data-open-rule="DY/Trace/BaseAttackerKnowledgeTheorem.lean:117">rule</button></td></tr>
+        <tr><td><code>SubBaseAttackerKnowledgeTheorem__expertMode</code></td><td>base knowledge is publishable, combined</td><td><span class="pill t">T</span> with <code>useInferInstanceAs := false</code></td><td><code>BaseAttackerKnowledgeTheorem</code></td><td><button data-open-rule="DY/Trace/BaseAttackerKnowledgeTheorem.lean:81">rule</button></td></tr>
+        <tr><td><code>ReachabilityConfig</code></td><td><code>reachability</code>, the step list</td><td><span class="pill e">E</span><span class="pill s">S</span></td><td>n/a</td><td><button data-open-rule="DY/Trace/Reachability.lean:188">rule</button></td></tr>
+        <tr><td><code>ReachabilityTheorem</code></td><td><code>ReachableImpliesInvariant reachability</code></td><td><span class="pill t">T</span></td><td>n/a</td><td><button data-open-rule="DY/Trace/ReachabilityTheorem.lean:74">rule</button></td></tr>
+      </tbody>
+    </table>
+    <div class="cards" id="rule-cards"></div>
+    <p>Two things the table hides. Without <code>+toplevel</code>, most rules prepend instance binders such as <code>[ExecTraceTypes] [ProofTraceTypes]</code> to every generated declaration, so the combination can be stated inside a section that is still parametric in the global types; with <code>+toplevel</code> those binders are dropped because the command itself is defining the global types. And the <code>SubBaseAttackerKnowledgeTheorem</code> family shows the escape hatch: a rule may simply emit another <code>#combine_one</code> with adjusted binders, which Lean expands again.</p>
+  </section>
+
+  <section id="issues">
+    <h2>5 · Two Lean issues the macro works around</h2>
+    <h3>Exhaustive matches on <code>Fin n</code></h3>
+    <p>Every indexed family is written as a <code>match</code> with one literal arm per index. Lean's exhaustiveness check for literal patterns on <code>Fin n</code> gives up above a certain size. The macro appends an unreachable catch-all arm whose body is a proof by <code>grind</code> that no such index exists, and comments the line with the issue number.</p>
+    <pre class="lean-static">-- workaround for https://github.com/leanprover/lean4/issues/9292
+arms := arms.push (← `(Parser.Term.matchAltExpr| | ⟨ _+$(quote sources.size), _ ⟩ => False.elim (by grind)))</pre>
+    <p class="muted" style="font-size:14px">lean4#9292, "Pattern matching on Fin n breaks exhaustivity for n &gt; 15", still open at the time of this snapshot.</p>
+
+    <h3>Top-level instances unfold differently</h3>
+    <p><code>mkHasCombine</code> exists only because typeclass resolution treats a top-level instance differently from a local one when the goal mentions the unfolded combination rather than its name. The macro restates <code>Has X</code> at <code>Has (X.combine X.internal)</code>, and only when <code>+toplevel</code> is set, since local instances do not show the problem. The doc comment on the helper says plainly that relying on the local behaviour is an unintended feature of Lean that might change.</p>
+    <p class="muted" style="font-size:14px">lean4#13571, "Inconsistent behavior in typeclass resolution (local vs top-level instance)", open.</p>
+    <div class="callout warn"><b>Consequence for readers.</b> When you see an instance named <code>inst._@.Examples.SignedDH.Instance…</code> in a proof tree or a search, it is one of these generated inclusions, not something a person wrote. The toolkit page labels them "hygienic instance".</div>
+  </section>
+
+  <section id="recipe">
+    <h2>6 · Adding a mechanism</h2>
+    <p>The module documentation gives the recipe, and every existing rule follows it:</p>
+    <ol>
+      <li>Define the mechanism around a combinator <code>X.combine : (Fin n → X) → X</code>, with a generic <code>X.HasStep (xs id) (X.combine xs)</code> instance and a generic "<code>HasStep</code> and <code>Has</code> give <code>Has</code>" instance, as <code>ExecTraceTypes</code> does in section 1.</li>
+      <li>Give each piece a declaration named <code>&lt;piece&gt;.X</code>, since the macro forms source names by appending the target name.</li>
+      <li>Add <code>macro_rules | `(command| #combine_one $options* X $params* from $sources,*) =&gt; …</code> in the same file, call <code>combineExplicit</code> or <code>combineTypeclass</code> for the value, <code>mkHasStep</code> for the inclusions, and append the top-level instances behind <code>parseOptions options |&gt;.toplevel</code>.</li>
+      <li>If the mechanism is data that other declarations unfold, add <code>mkHasCombine</code> for the top-level case.</li>
+    </ol>
+    <p>Nothing registers the new rule anywhere. Importing the file is enough, which is the point: a user's own primitive, in a user's own file, participates in <code>#combine</code> on equal terms with <code>Hash</code>.</p>
+  </section>
+</article>
+</div>
+<footer>Generated from the DyLean snapshot in this site's export. The prose is editorial; the cards are the compiler's view of the source.</footer>
+<template id="card-template">
+  <article class="card">
+    <header class="card-head">
+      <button class="card-toggle" aria-expanded="false" aria-label="Toggle source">▸</button>
+      <div class="card-title"><code class="card-name"></code><span class="kind"></span><span class="role"></span></div>
+      <div class="card-links"><a class="src-link" target="_blank" rel="noopener">source</a><a class="proof-link" href="#" hidden>proof tree</a><button class="card-close" aria-label="Close" hidden>×</button></div>
+    </header>
+    <div class="card-notes"></div>
+    <div class="card-body" hidden>
+      <pre class="lean"></pre>
+      <div class="nested"></div>
+    </div>
+  </article>
+</template>
+</body></html>

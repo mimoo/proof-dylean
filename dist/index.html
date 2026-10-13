@@ -31,6 +31,7 @@ h1{font-size:clamp(30px,4.6vw,44px);line-height:1.1;letter-spacing:-.035em;margi
 .card .go{font-size:14px;color:var(--accent);font-weight:600}
 .card:hover .go::after{content:" →"}
 .card .go::after{content:" →";opacity:.6}
+.also{margin:26px 0 0;padding:14px 18px;border:1px dashed var(--border);border-radius:12px;color:var(--text);font-size:15px}.also>span:first-child{color:var(--warm);font-weight:600;margin-right:6px}.also code{color:var(--blue)}
 .about{margin-top:48px;padding-top:28px;border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;color:var(--muted);font-size:14px;line-height:1.6}
 .about h3{margin:0 0 6px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--text)}
 .about p{margin:0}
@@ -76,6 +77,8 @@ footer{padding:18px 24px;border-top:1px solid var(--border);color:var(--muted);f
       <span class="go">Browse the source</span>
     </a>
   </div>
+
+  <p class="also"><span>Also:</span> <a href="combine.html">How <code>#combine</code> assembles a protocol from its pieces</a> <span class="muted">· the macro that generates the sum types and instances, explained and traced through its implementation.</span></p>
 
   <section class="about" aria-label="About">
     <div><h3>The theorem</h3><p><code>client_secrecy</code>: in any reachable trace where the attacker knows the client's key, the server's signing key was compromised before the client finished, or one of the two ephemeral states was.</p></div>
