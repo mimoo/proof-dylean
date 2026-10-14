@@ -43,7 +43,7 @@ class CombineTests(unittest.TestCase):
         self.assertIn('14 declarations', HTML)
 
     def test_assets_and_links(self):
-        for asset in ('combine.css', 'cards.css', 'cards.js', 'combine.js', 'toolkit-data.js'):
+        for asset in ('cards.css', 'cards.js', 'combine.js', 'toolkit-data.js'):
             self.assertIn(asset, HTML)
             self.assertTrue((DIST/asset).exists(), asset)
         self.assertIn('combine.html', (DIST/'index.html').read_text())

@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101923"><title>DyLean · Local and global state</title><link rel="icon" href="data:,">
+<meta name="description" content="How DyLean stores, reads and compromises participant state: handles as trace indices, state invariants, per-state labels, and long-term keys built on top.">
+<link rel="stylesheet" href="explainer.css"><link rel="stylesheet" href="cards.css"><script defer src="toolkit-data.js"></script><script defer src="cards.js"></script><script defer src="explainer.js"></script></head>
+<body>
+<header><a class="brand" href="index.html"><b>δ</b> DyLean <span>/ local and global state</span></a><nav class="header-links"><a href="trace.html">A real trace</a><a href="hoare.html">Hoare triples</a><a href="labels.html">Labels</a><a href="source.html" target="_blank" rel="noopener">Source browser ↗</a></nav></header>
+
+<div class="layout">
+<nav class="toc" aria-label="Contents">
+  <p class="eyebrow">CONTENTS</p>
+  <a href="#model">1 · The model in one picture</a>
+  <a href="#global">2 · Global state</a>
+  <a href="#handles" class="sub">Handles are trace indices</a>
+  <a href="#ginv" class="sub">State invariants</a>
+  <a href="#compromise">3 · Compromise</a>
+  <a href="#statelabel" class="sub">Each state has its own label</a>
+  <a href="#local">4 · Local state</a>
+  <a href="#serial">5 · Serialisation and KnowableBy</a>
+  <a href="#ltk">6 · Long-term keys</a>
+  <a href="#signeddh">7 · SignedDH's states</a>
+  <a href="#faq">8 · Questions people ask</a>
+</nav>
+
+<article>
+  <p class="eyebrow">ACTIONS</p>
+  <h1>Local and global state</h1>
+  <p class="lede">Protocol steps in DyLean are separate programs. A client that initiates and later finishes runs two steps, and the second must remember what the first chose. There is no heap and no hidden variable: <b>state lives in the trace</b>, as entries a step appends and a later step reads back by index. Two files implement it, <code>PersistentGlobalState</code> and a thin participant-aware wrapper, <code>PersistentLocalState</code>. Both are small, and the whole security story of state rests on one trick in the compromise action.</p>
+
+  <section id="model">
+    <h2>1 · The model in one picture</h2>
+    <div class="flow" aria-label="Lifecycle of a stored state">
+      <span class="label">Client.initiate, then Client.finish, in the honest trace</span>
+      <span class="box user">storeLocalState "Alice" {xPk, xSk}<small>appends entry 6; returns handle 6</small></span>
+      <span class="arr">→<small>later step</small></span>
+      <span class="box">getLocalState "Alice" 6<small>reads entry 6; fails if not Alice's or not this type</small></span>
+      <span class="arr">→</span>
+      <span class="box user">storeLocalState "Alice" {xPk, kC}<small>appends entry 14; a new state, not an update</small></span>
+      <span class="arr">→<small>attacker, any time</small></span>
+      <span class="box hot">compromise 6<small>logs the compromise, then sends the serialised state</small></span>
+    </div>
+    <ul>
+      <li><b>Storing appends.</b> The handle a step gets back is the index of the new entry.</li>
+      <li><b>Reading is a typed lookup</b> at an index. A wrong index, a wrong type or, for local state, a wrong participant makes the step fail.</li>
+      <li><b>Nothing is ever overwritten.</b> Old states stay in the trace and stay compromisable.</li>
+      <li><b>Stored state is invisible to the attacker</b> until a compromise step publishes it.</li>
+    </ul>
+  </section>
+
+  <section id="global">
+    <h2>2 · Global state</h2>
+    <p>The global layer stores any value of a type <code>StateT</code>. Its execution entry is just the value, and it contributes nothing to attacker knowledge: <code>attackerKnows _ _ _ := False</code>.</p>
+    <pre class="lean-static">structure ExecEntryT (StateT: Type) where
+  st: StateT
+
+def storeGlobalState (st: StateT) : Traceful Nat := do
+  let entry: State.ExecEntryT StateT := { st }
+  appendEntry entry
+
+def getGlobalState (handle: Nat) : Traceful StateT := do
+  let e: State.ExecEntryT StateT ← getEntry handle
+  return e.st</pre>
+    <div class="cards"><div data-card="DY.PersistentGlobalState.storeGlobalState"></div><div data-card="DY.PersistentGlobalState.getGlobalState"></div></div>
+
+    <h3 id="handles">Handles are trace indices</h3>
+    <p><code>appendEntry</code> returns <code>tr.length</code> before appending, which is the index the entry lands at. <code>getEntry</code> calls <code>tr.at?</code>, which checks the index is in range and then <em>projects</em> the entry out of the global sum type. The projection returns <code>none</code> when the entry at that index has a different type, for example a network message, or a stored state of another type. In the <code>Traceful</code> monad, <code>none</code> is failure: the step stops and produces nothing.</p>
+    <div class="cards"><div data-card="DY.appendEntry"></div><div data-card="DY.Trace.at?"></div></div>
+    <div class="callout"><b>Handles are not secrets.</b> They are plain numbers chosen by whoever invokes the step, and the reachability config quantifies over all of them. The attacker can call <code>Client.finish</code> with any handle. Type and participant checks make a bad handle fail, which is harmless: a failed step proves nothing and appends nothing after the failure.</div>
+
+    <h3 id="ginv">State invariants</h3>
+    <p>Each storable type declares what must hold of a value when it is stored. The invariant must survive trace growth, because it is read back later:</p>
+    <pre class="lean-static">class GlobalStateInv (StateT: Type) where
+  invariant: StateT → ProofTrace → Prop
+  invariant_later: ∀ st tr1 tr2, tr1 ≤ tr2 → invariant st tr1 → invariant st tr2</pre>
+    <p>The entry invariant of a stored state is exactly this predicate, so the Hoare triples read naturally:</p>
+    <table class="mech">
+      <thead><tr><th>action</th><th>must prove</th><th>you get</th></tr></thead>
+      <tbody>
+        <tr><td><code>storeGlobalState st</code></td><td><code>GlobalStateInv.invariant st tr</code></td><td>a handle</td></tr>
+        <tr><td><code>getGlobalState handle</code></td><td>nothing</td><td><code>GlobalStateInv.invariant st tr</code> for the value read</td></tr>
+      </tbody>
+    </table>
+    <p>The read triple is where monotonicity earns its keep. The underlying <code>getEntry.spec</code> only knows the invariant held on the prefix <em>before</em> that entry. <code>invariant_later</code> lifts it to the current trace.</p>
+    <div class="cards"><div data-card="DY.PersistentGlobalState.GlobalStateInv"></div><div data-card="DY.PersistentGlobalState.storeGlobalState.spec"></div><div data-card="DY.PersistentGlobalState.getGlobalState.spec"></div><div data-card="DY.getEntry.spec"></div></div>
+  </section>
+
+  <section id="compromise">
+    <h2>3 · Compromise</h2>
+    <p>A compromise is an action the attacker may take on any stored state. It does three things, in this order:</p>
+    <pre class="lean-static">def compromise (StateT: Type) [Comparse.ParseableSerializeable StateT] (handle: Nat) : Traceful Nat := do
+  let state: StateT ← getGlobalState handle                          -- read it, with its invariant
+  ProtocolEvent.logEvent ({ state }: Compromise.CompromiseEvent StateT)  -- record that it leaked
+  Network.sendMessage (Comparse.serialize state)                      -- hand the bytes to the attacker</pre>
+    <p>Two entries are appended: a compromise event, then a network message. The event contributes nothing to attacker knowledge; the attacker learns the state only through the message. The event invariant is <code>True</code>, so logging it needs no justification.</p>
+    <div class="cards"><div data-card="DY.PersistentGlobalState.compromise"></div><div data-card="DY.PersistentGlobalState.compromise.spec"></div></div>
+
+    <h3 id="statelabel">Each state has its own label, and logging makes it corrupt</h3>
+    <p>Sending a message requires it to be publishable, so how can a secret state ever be sent? The answer is the per-state label:</p>
+    <pre class="lean-static">def GlobalStateCompromised (state: StateT) (tr: ExecTrace) : Prop :=
+  tr.EventLogged ({ state }: Compromise.CompromiseEvent StateT)
+
+def label (state: StateT) := ProtocolEvent.label ({ state }: Compromise.CompromiseEvent StateT)
+-- (label state).isCorrupt tr = GlobalStateCompromised state tr</pre>
+    <p>The label of a state is "this exact value has been compromised". Compromisable states must promise that their contents are knowable by that label:</p>
+    <pre class="lean-static">class CompromisableGlobalStateInv (StateT: Type) … extends GlobalStateInv StateT where
+  invariant_implies_KnowableBy:
+    ∀ (state: StateT) tr,
+      GlobalStateInv.invariant state tr →
+      Comparse.IsWellFormed (Bytes.KnowableBy (label state)) state tr</pre>
+    <p>Now the compromise proof goes through in three moves. Reading the state gives its invariant, hence <code>KnowableBy (label state)</code>. Logging the event makes <code>label state</code> corrupt. A corrupt label flows to public by definition of <code>canFlow</code>, so the bytes are publishable and the send is allowed.</p>
+    <div class="callout"><b>The trick.</b> The order in <code>compromise</code> is not cosmetic. The event is logged <em>before</em> the send, so by the time the send's precondition is checked, the state's own label is already corrupt. Every protocol label that should be broken by this leak must be shown to flow into this per-state label, which is what each state's <code>invariant_implies_KnowableBy</code> proof does.</div>
+    <div class="cards"><div data-card="DY.PersistentGlobalState.GlobalStateCompromised"></div><div data-card="DY.PersistentGlobalState.label"></div><div data-card="DY.PersistentGlobalState.CompromisableGlobalStateInv"></div><div data-card="DY.ProtocolEvent.label"></div></div>
+  </section>
+
+  <section id="local">
+    <h2>4 · Local state: the same thing, per participant</h2>
+    <p>Local state wraps a value with its owner and stores the pair as global state:</p>
+    <pre class="lean-static">structure LocalState (StateT: Type) where
+  participant: Participant          -- abbrev Participant := String
+  state: StateT
+
+def storeLocalState (participant) (state) : Traceful Nat := do
+  PersistentGlobalState.storeGlobalState ({ participant, state }: LocalState StateT)
+
+def getLocalState (participant) (handle) : Traceful StateT := do
+  let st: LocalState StateT ← PersistentGlobalState.getGlobalState handle
+  guard (st.participant = participant)
+  return st.state</pre>
+    <p>The invariant becomes participant-indexed, <code>LocalStateInv.invariant : Participant → StateT → ProofTrace → Prop</code>, and an instance maps it onto the global one. Everything else is inherited: the triples, compromise, the per-state label, and the compromisable class.</p>
+    <table class="mech">
+      <thead><tr><th>local</th><th>defined as</th></tr></thead>
+      <tbody>
+        <tr><td><code>LocalStateInv.invariant p st tr</code></td><td>the global invariant of <code>{participant := p, state := st}</code></td></tr>
+        <tr><td><code>LocalStateCompromised p st tr</code></td><td><code>GlobalStateCompromised {p, st} tr</code></td></tr>
+        <tr><td><code>label p st</code></td><td><code>PersistentGlobalState.label {p, st}</code>, corrupt iff <code>LocalStateCompromised p st</code></td></tr>
+        <tr><td><code>compromise StateT handle</code></td><td>the global compromise of a <code>LocalState StateT</code>; the participant is <em>not</em> checked</td></tr>
+      </tbody>
+    </table>
+    <p>The <code>guard</code> in <code>getLocalState</code> is what makes its postcondition sound. The triple promises <code>LocalStateInv.invariant participant st tr</code> for the participant passed in, which is only true if the stored value was stored for that participant.</p>
+    <div class="cards"><div data-card="DY.PersistentLocalState.getLocalState"></div><div data-card="DY.PersistentLocalState.LocalStateInv"></div><div data-card="DY.PersistentLocalState.getLocalState.spec"></div><div data-card="DY.PersistentLocalState.CompromisableLocalStateInv"></div></div>
+  </section>
+
+  <section id="serial">
+    <h2>5 · Serialisation and <code>KnowableBy</code></h2>
+    <p>Compromise sends <code>serialize state</code>, so every compromisable state type needs a <code>Comparse.ParseableSerializeable</code> instance, and the attacker can parse the bytes back. In the compromise trace, the leaked message decodes to a length-prefixed <code>"Alice"</code> followed by <code>xPk</code> and <code>xSk</code>.</p>
+    <p>The knowability obligation is stated with <code>IsWellFormed</code>, which applies a byte predicate to every byte field of the value. Each state type has an <code>IsWellFormed_eq</code> lemma that unfolds it into a conjunction:</p>
+    <pre class="lean-static">theorem ClientInitiateState.IsWellFormed_eq … :
+  IsWellFormed pre x tr = (pre x.xPk tr ∧ pre x.xSk tr)</pre>
+    <p>So for <code>ClientInitiateState</code>, the obligation reads: <code>xPk</code> and <code>xSk</code> are each <code>KnowableBy (label p st)</code>. The participant string adds nothing, by <code>LocalState.IsWellFormed_eq</code>.</p>
+    <div class="cards"><div data-card="DY.Comparse.IsWellFormed"></div><div data-card="DY.Bytes.KnowableBy"></div><div data-card="DY.Example.SignedDH.ClientInitiateState.IsWellFormed_eq"></div><div data-card="DY.PersistentLocalState.LocalState.IsWellFormed_eq"></div></div>
+  </section>
+
+  <section id="ltk">
+    <h2>6 · Long-term keys are built from these two layers</h2>
+    <p><code>LongTermKeys</code> is a library mechanism, parameterised by a PKI name such as <code>"SignedDH PKI"</code>, that uses one state type of each kind:</p>
+    <ul>
+      <li><code>SecretKeyState name := {sk}</code> is <b>local</b> state: only its owner can read it, and it can be compromised.</li>
+      <li><code>PublicKeyState name := {p, pk}</code> is <b>global</b> state: anyone can read it, and the owner is a field, checked by <code>getPublicKey</code>.</li>
+    </ul>
+    <pre class="lean-static">def generateKeyPair (p: Participant) : Traceful (Nat × Nat × Nat) := do
+  let sk ← Random.genRand 32
+  let pk := skToPk sk
+  let msgHandle ← Network.sendMessage pk
+  let pkHandle ← PersistentGlobalState.storeGlobalState ({p, pk}: PublicKeyState name)
+  let skHandle ← PersistentLocalState.storeLocalState p ({sk}: SecretKeyState name)
+  pure (msgHandle, pkHandle, skHandle)</pre>
+    <p>Compromising a long-term key is compromising its secret-key state, and the key's label is defined from that:</p>
+    <pre class="lean-static">def LongTermKeyCompromised (participant) (pk) (tr) : Prop :=
+  ∃ sk, pk = skToPk sk ∧ PersistentLocalState.LocalStateCompromised participant ({ sk }: SecretKeyState name) tr</pre>
+    <p>The <code>ProofConfig</code> class is what a protocol supplies to say what a valid public key is: in SignedDH, publishable, labelled with <code>LongTermKeys.label</code>, and with the server's signing usage. The first four entries of every SignedDH trace are this step.</p>
+    <div class="cards"><div data-card="DY.LongTermKeys.generateKeyPair"></div><div data-card="DY.LongTermKeys.getPublicKey"></div><div data-card="DY.LongTermKeys.LongTermKeyCompromised"></div><div data-card="DY.LongTermKeys.ProofConfig"></div></div>
+  </section>
+
+  <section id="signeddh">
+    <h2>7 · SignedDH's three states</h2>
+    <table class="mech">
+      <thead><tr><th>state</th><th>stored by</th><th>invariant</th></tr></thead>
+      <tbody>
+        <tr><td><code>ClientInitiateState {xPk, xSk}</code></td><td><code>Client.initiate</code></td><td><code>xPk = dhPk xSk ∧ xPk.Publishable ∧ xSk.Invariant ∧ xSk.label = clientLabel me xPk</code></td></tr>
+        <tr><td><code>ClientFinishState {xPk, kC}</code></td><td><code>Client.finish</code></td><td><code>xPk.Publishable ∧ kC.Invariant ∧ (kC.label).canFlow (clientLabel me xPk)</code></td></tr>
+        <tr><td><code>ServerFinishState {yPk, kS}</code></td><td><code>Server.receive</code></td><td><code>yPk.Publishable ∧ kS.Invariant ∧ (kS.label).canFlow (serverLabel me yPk)</code></td></tr>
+      </tbody>
+    </table>
+    <p>All three <code>invariant_implies_KnowableBy</code> proofs have the same shape. The protocol label flows into the per-state label, because if this exact state was compromised then the protocol's compromise predicate holds with this state as witness. Then <code>canFlowTrans</code> finishes: each secret field's label flows to the protocol label, which flows to the per-state label.</p>
+    <pre class="lean-static">def ClientEphemeralStateCompromised (me: Participant) (xPk: Bytes) (tr: ExecTrace) : Prop :=
+  (∃ xSk, PersistentLocalState.LocalStateCompromised me ({xPk, xSk}: ClientInitiateState) tr) ∨
+  (∃ kC,  PersistentLocalState.LocalStateCompromised me ({xPk, kC}: ClientFinishState) tr)</pre>
+    <p>The client's label is corrupt if <em>either</em> state containing that <code>xPk</code> leaks, because both contain a secret derived from <code>xSk</code>. This predicate is the second disjunct of <code>client_secrecy</code>.</p>
+    <div class="cards"><div data-card="DY.Example.SignedDH.ClientInitiateStateInv"></div><div data-card="DY.Example.SignedDH.ClientEphemeralStateCompromised"></div><div data-card="DY.Example.SignedDH.ClientInitiateState.compromise"></div></div>
+  </section>
+
+  <section id="faq">
+    <h2>8 · Questions people ask</h2>
+    <h3>Can one participant read another's state?</h3>
+    <p>Not through <code>getLocalState</code>, which fails on a participant mismatch. But <code>participant</code> is just an argument of the step, and the attacker chooses step arguments. So this is not access control. It keeps proofs consistent: a step running as <code>me</code> can only get back a value stored as <code>me</code>, so the invariant it receives is about the right participant. Confidentiality against the attacker comes from elsewhere: stored state contributes nothing to attacker knowledge, and the only path from state to network is <code>compromise</code>.</p>
+    <h3>How does a step update its state?</h3>
+    <p>It doesn't. It stores a new value and returns the new handle; the caller passes that handle to the next step. <code>Client.finish</code> reads the state at handle 6 and stores a new <code>ClientFinishState</code> at 14. The old entry remains and can still be compromised, which is why <code>ClientEphemeralStateCompromised</code> covers both states.</p>
+    <h3>Why does compromise not check the participant?</h3>
+    <p>Because the attacker is compromising a machine, not asking politely. Any stored state can be leaked; what the proof tracks is which labels that leak makes corrupt.</p>
+    <h3>Why do state invariants need <code>invariant_later</code>?</h3>
+    <p>Because a state is read in a later step, on a longer trace than the one it was stored on. Every fact that crosses steps must survive growth.</p>
+  </section>
+</article>
+</div>
+<footer>The prose is editorial; the cards are the compiler's view of the source in <code>../dylean</code>.</footer>
+<template id="card-template">
+  <article class="card">
+    <header class="card-head">
+      <button class="card-toggle" aria-expanded="false" aria-label="Toggle source">▸</button>
+      <div class="card-title"><code class="card-name"></code><span class="kind"></span><span class="role"></span></div>
+      <div class="card-links"><a class="src-link" target="_blank" rel="noopener">source</a><a class="proof-link" href="#" hidden>proof tree</a><button class="card-close" aria-label="Close" hidden>×</button></div>
+    </header>
+    <div class="card-notes"></div>
+    <div class="card-body" hidden><pre class="lean"></pre><div class="nested"></div></div>
+  </article>
+</template>
+</body></html>

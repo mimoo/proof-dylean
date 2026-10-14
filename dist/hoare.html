@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101923"><title>DyLean · Hoare triples and wp</title><link rel="icon" href="data:,">
+<meta name="description" content="What a DyLean Hoare triple promises, what WP.wp means on a trace, ghost arguments, the bind rule, and how the step tactic chains specs through a protocol step.">
+<link rel="stylesheet" href="explainer.css"><link rel="stylesheet" href="cards.css">
+<style>
+.stepper{border:1px solid var(--border);border-radius:12px;background:var(--panel);margin:18px 0;overflow:hidden}
+.stepper-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border)}
+.stepper-head b{font-size:13px;margin-right:auto}
+.stepper-head button{min-height:32px;padding:3px 12px;font-size:13px}
+.stepper-head .count{font:12px var(--mono);color:var(--muted)}
+.stepper-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.stepper-body>div{padding:12px 14px;min-width:0}
+.stepper-body>div+div{border-left:1px solid var(--border)}
+.stepper h5{margin:0 0 8px;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.code-lines{font:12.5px/1.75 var(--mono);white-space:pre;overflow:auto}
+.code-lines .ln{display:block;padding:0 6px;border-radius:4px;color:var(--muted)}
+.code-lines .ln.done{color:#7f93a6}
+.code-lines .ln.now{background:#1c3236;color:var(--text)}
+.ctx{font:12.5px/1.7 var(--mono)}
+.ctx .h{display:flex;gap:8px;padding:1px 6px;border-radius:4px;overflow-wrap:anywhere}
+.ctx .h b{color:var(--warm);font-weight:600;flex:0 0 auto}
+.ctx .h.new{background:#1c3236}.ctx .h.new b{color:var(--accent)}
+.ctx .goal{border-top:1px solid var(--border);margin-top:8px;padding-top:8px;white-space:pre-wrap;color:var(--text)}
+.stepper-note{border-top:1px solid var(--border);padding:12px 14px;font-size:14px;line-height:1.6;color:var(--text);background:#0e1620}
+.stepper-note b{color:var(--accent)}
+.stepper-note .ob{color:var(--rose)}
+.wpbox{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:16px 0}
+.wpbox div{border:1px solid var(--border);border-radius:10px;background:var(--panel);padding:12px;font-size:13.5px;color:var(--muted);line-height:1.5}
+.wpbox div b{display:block;color:var(--text);font:600 12.5px var(--mono);margin-bottom:6px}
+@media(max-width:820px){.stepper-body{grid-template-columns:1fr}.stepper-body>div+div{border-left:0;border-top:1px solid var(--border)}.wpbox{grid-template-columns:1fr 1fr}}
+</style>
+<script defer src="toolkit-data.js"></script><script defer src="cards.js"></script><script defer src="explainer.js"></script></head>
+<body>
+<header><a class="brand" href="index.html"><b>δ</b> DyLean <span>/ Hoare triples and wp</span></a><nav class="header-links"><a href="trace.html">A real trace</a><a href="labels.html">Labels</a><a href="state.html">State</a><a href="source.html" target="_blank" rel="noopener">Source browser ↗</a></nav></header>
+
+<div class="layout">
+<nav class="toc" aria-label="Contents">
+  <p class="eyebrow">CONTENTS</p>
+  <a href="#idea">1 · The idea in one paragraph</a>
+  <a href="#traces">2 · Two traces</a>
+  <a href="#wp">3 · What wp says</a>
+  <a href="#wpfields" class="sub">Field by field</a>
+  <a href="#wpother" class="sub">Id and Err</a>
+  <a href="#triple">4 · Hoare triples</a>
+  <a href="#ghost" class="sub">Ghost arguments</a>
+  <a href="#pure" class="sub">Pure triples</a>
+  <a href="#base">5 · The base case: appending</a>
+  <a href="#bind">6 · Chaining: the bind rule</a>
+  <a href="#step">7 · The step tactic</a>
+  <a href="#walk">8 · Client.initiate, step by step</a>
+  <a href="#mono">9 · Monotonicity</a>
+  <a href="#reach">10 · Where triples end up</a>
+</nav>
+
+<article>
+  <p class="eyebrow">PROOF MECHANICS</p>
+  <h1>Hoare triples and <code>wp</code></h1>
+  <p class="lede">Every protocol step in DyLean has a spec of the form <code>HoareTriple step pre post</code>, and almost all of them say <code>pre = True</code> and <code>post = True</code>. That looks empty and is the source of most confusion. <b>The content is hidden in the definition of <code>wp</code></b>: a triple always promises that the global invariant is preserved, and that promise is what forces every append inside the step to be justified. This page builds that up from the definitions.</p>
+
+  <section id="idea">
+    <h2>1 · The idea in one paragraph</h2>
+    <p>A protocol step is a program that reads and appends to the trace. Its Hoare triple says: <em>if you start from a trace satisfying the invariant and the precondition, then running the step produces a trace that still satisfies the invariant, extends the old one, and satisfies the postcondition.</em> "Satisfies the invariant" means every entry was allowed when appended, so proving a step's triple means proving, for each append, that its entry invariant held at that moment. Triples for small actions compose into triples for whole steps through a bind rule, and the <code>step</code> tactic applies that rule one action at a time.</p>
+  </section>
+
+  <section id="traces">
+    <h2>2 · Two traces</h2>
+    <p>Programs run on the <b>execution trace</b>: what really happened, what the attacker sees. Proofs talk about the <b>proof trace</b>: the same entries, plus ghost annotations that exist only for the proof, such as the label chosen for each random value. <code>tr.erase</code> drops the annotations.</p>
+    <pre class="lean-static">def Traceful (a: Type) := (trIn: ExecTrace) → Option a × { trOut: ExecTrace // trIn ≤ trOut }</pre>
+    <p>A <code>Traceful</code> program takes an execution trace and returns an optional result and a longer trace. <code>none</code> means the program failed, for example a parse failed or a <code>guard</code> was false. The trace can only grow; that is built into the type.</p>
+    <div class="cards"><div data-card="DY.Traceful"></div><div data-card="DY.Trace.le"></div></div>
+  </section>
+
+  <section id="wp">
+    <h2>3 · What <code>wp</code> says</h2>
+    <p><code>WP.wp f post tr</code> is the weakest precondition: the condition on a proof trace <code>tr</code> under which running <code>f</code> ends well, where "well" means <code>post</code> plus the built-in obligations. For <code>Traceful</code>:</p>
+    <pre class="lean-static">instance : WP Traceful where
+  wp f post tr_proof :=
+    let (opt_x, tr_exec') := f.run tr_proof.erase      -- run the program on the execution view
+    ∃ tr_proof',                                      -- there is a new proof trace…
+      ( match opt_x with
+        | .none   => True                             -- …failure: no postcondition owed
+        | .some x => post x tr_proof' ) ∧             -- …success: the postcondition on the new trace
+      Trace.Invariant tr_proof' ∧                     -- …that satisfies the invariant
+      tr_exec' = tr_proof'.erase ∧                    -- …that erases to what the program produced
+      tr_proof ≤ tr_proof'                            -- …and extends the old proof trace</pre>
+
+    <h3 id="wpfields">Field by field</h3>
+    <div class="wpbox">
+      <div><b>∃ tr_proof'</b>Choosing the witness means choosing the ghost annotations for the entries the program just appended. This is where ghost arguments come from.</div>
+      <div><b>Trace.Invariant tr_proof'</b>The new trace satisfies the invariant. This conjunct is in every <code>wp</code>, which is why a triple with trivial pre and post is not trivial.</div>
+      <div><b>tr_exec' = tr_proof'.erase</b>The proof trace really is an annotation of what the program did, not an invented trace.</div>
+      <div><b>tr_proof ≤ tr_proof'</b>The proof trace only grows, so facts stated about the old trace can be carried to the new one.</div>
+    </div>
+    <div class="callout"><b>Failure is not an escape hatch.</b> When the program fails, the postcondition is <code>True</code>, but the invariant, erasure and extension are still required. A step that appends two entries and then fails must have justified those two entries. Correctness of <code>post</code> is partial; preservation of the invariant is total.</div>
+    <div class="cards"><div data-card="DY.WP"></div><div data-card="DY.instWPTracefulOfTraceInvariant"></div><div data-card="DY.Trace.Invariant"></div></div>
+
+    <h3 id="wpother">The other two instances: <code>Id</code> and <code>Err</code></h3>
+    <p>For pure computations there is no trace to change. <code>wp f post tr := post f.run tr</code> for <code>Id</code>, and for <code>Err</code>, which is <code>OptionT Id</code> and is used by parsing, failure again owes nothing. These exist so the same triple vocabulary covers parsers and pure helpers, which are then lifted into <code>Traceful</code>.</p>
+    <div class="cards"><div data-card="DY.instWPErr"></div><div data-card="DY.WPLift"></div></div>
+  </section>
+
+  <section id="triple">
+    <h2>4 · Hoare triples</h2>
+    <pre class="lean-static">def hoareTriple (f: m a) (pre: ProofTrace → Prop) (post: a → ProofTrace → Prop) : Prop :=
+  ∀ tr, pre tr → Trace.Invariant tr → WP.wp f post tr
+
+class HoareTriple (f: m a) (pre: outParam (ProofTrace → Prop)) (post: outParam (a → ProofTrace → Prop)) where
+  pf: hoareTriple f pre post</pre>
+    <p>The definition adds one assumption to <code>wp</code>: the starting trace satisfies the invariant. So a triple reads "invariant and pre before, invariant and post after".</p>
+    <p>The class form matters for automation. <code>pre</code> and <code>post</code> are <code>outParam</code>s, so typeclass search on <code>HoareTriple f ?pre ?post</code> <em>finds</em> the spec of <code>f</code> and reports its pre and post. Specs are declared as <code>@[instance] theorem X.spec : HoareTriple …</code>, which is why proving a step never names the specs of the actions it calls.</p>
+    <div class="cards"><div data-card="DY.hoareTriple"></div><div data-card="DY.HoareTriple"></div></div>
+
+    <h3 id="ghost">Ghost arguments</h3>
+    <p>Some specs need a value that does not appear in the program. <code>genRand 32</code> produces fresh bytes, but which label do they get? The program has no label; the proof chooses one. A ghost triple is indexed by such a value:</p>
+    <pre class="lean-static">class HoareTripleGhost (f: m a) [HasGhostArgumentType f g] (ghost: g) (pre: outParam …) (post: outParam …) where
+  pf: hoareTriple f pre post
+
+theorem genRand.spec (size) (label: Bytes → Label) (usage: Usage) :
+  HoareTripleGhost (genRand size) (label, usage)
+    (fun _ => True)
+    (fun res tr => res.Invariant tr ∧ res.label tr = label res ∧ res.HasUsage usage tr)</pre>
+    <p>In a proof the ghost is supplied with <code>step with ⟨ … ⟩</code>. <code>Client.initiate.spec</code> writes <code>step with ⟨ fun xSk => clientLabel me (dhPk xSk), Usage.nothing ⟩</code>: the label of <code>xSk</code> is declared to be the client's label for its own public key. Every plain triple counts as a ghost triple with ghost <code>()</code>. Ghost types in the library:</p>
+    <table class="mech">
+      <thead><tr><th>action</th><th>ghost</th><th>what it decides</th></tr></thead>
+      <tbody>
+        <tr><td><code>appendEntry e</code></td><td><code>Nat → ProofEntryT</code></td><td>the proof entry recorded, as a function of the timestamp</td></tr>
+        <tr><td><code>genRand n</code></td><td><code>(Bytes → Label) × Usage</code></td><td>the label and usage of the fresh bytes</td></tr>
+        <tr><td><code>sign sk n m</code></td><td><code>Usage</code></td><td>the usage of the key, which the signing predicate inspects</td></tr>
+        <tr><td><code>forIn xs init f</code></td><td><code>LoopInvariantAndProof</code></td><td>a loop invariant and a triple for one iteration</td></tr>
+      </tbody>
+    </table>
+    <p>When no ghost is given, <code>step</code> can look for one: a ghost "metaprogram" may search the context, as <code>sign</code>'s does for a hypothesis <code>sk.HasUsage ?u</code>.</p>
+    <div class="cards"><div data-card="DY.HoareTripleGhost"></div><div data-card="DY.Random.genRand.spec"></div><div data-card="DY.GhostParameterFinder"></div></div>
+
+    <h3 id="pure">Pure triples</h3>
+    <p>Cryptographic operations such as <code>dhPk</code>, <code>dh</code>, <code>hash</code> and <code>sign</code> are values, not trace actions. They get <code>HoareTriplePure</code>: no trace change, just "if pre holds on this trace, post holds of the value".</p>
+    <pre class="lean-static">class HoareTriplePure (x: a) (pre: outParam (ProofTrace → Prop)) (post: outParam (a → ProofTrace → Prop)) where
+  pf: ∀ tr, pre tr → post x tr
+
+instance (sk: Bytes) : HoareTriplePure (dhPk sk)
+  (fun tr => sk.Invariant tr)
+  (fun res tr => res.Invariant tr ∧ res.label tr = Label.pub)</pre>
+    <p>A <code>guard (verify …)</code> line uses a bridge instance that turns the pure triple of the boolean into a triple for the guard, with <code>true</code> substituted. That is how a passed signature check becomes a hypothesis.</p>
+    <div class="cards"><div data-card="DY.HoareTriplePure"></div><div data-card="DY.instHoareTripleGhostTracefulUnitGuardEqBoolTrueOfHoareTriplePureGhost"></div></div>
+  </section>
+
+  <section id="base">
+    <h2>5 · The base case: appending</h2>
+    <p>Every action that writes to the trace bottoms out in <code>appendEntry</code>, whose spec is the only place an invariant is checked directly:</p>
+    <pre class="lean-static">theorem appendEntry.spec (execEntry) (mkProofEntry: Nat → ProofEntryT) :
+  HoareTripleGhost (appendEntry execEntry) (mkProofEntry)
+    (fun tr => ∀ time, ErasableProofEntry.erase (mkProofEntry time) = execEntry ∧
+                       SubTraceInvariant.invariant tr (mkProofEntry time))     -- the entry invariant, before
+    (fun time tr => tr.at? time = some (mkProofEntry time))                    -- the entry is there, after
+-- proof: the witness is the old proof trace with (mkProofEntry trProof.length) appended</pre>
+    <p>The precondition is the entry invariant on the trace before. The derived specs just instantiate it: <code>sendMessage</code> needs <code>msg.Publishable</code>, <code>logEvent</code> needs the event invariant, <code>storeLocalState</code> needs the state invariant. Reading is the converse:</p>
+    <pre class="lean-static">theorem getEntry.spec (timestamp) : HoareTriple (getEntry timestamp)
+  (fun _ => True)
+  (fun entry tr => ∃ proofEntry, entry = erase proofEntry ∧
+                   SubTraceInvariant.invariant (tr.prefix timestamp) proofEntry)</pre>
+    <p>Reading an entry gives back the invariant that held when it was written, on the prefix up to it. That is the same fact <code>EventLoggedAt_imp_EventInv</code> recovers in security proofs.</p>
+    <div class="cards"><div data-card="DY.appendEntry.spec"></div><div data-card="DY.getEntry.spec"></div><div data-card="DY.Network.sendMessage.spec"></div><div data-card="DY.ProtocolEvent.logEvent.spec"></div></div>
+  </section>
+
+  <section id="bind">
+    <h2>6 · Chaining: the bind rule</h2>
+    <p>There is no bind <em>instance</em>. A step's spec is proved by applying a theorem for <code>x >>= f</code>, once per action:</p>
+    <pre class="lean-static">theorem Traceful.bind_wp (ghost: g) (x: Traceful a) (f: a → Traceful b) …
+    [HoareTripleGhost x ghost pre_x post_x]
+    (pf_tr_inv: Trace.Invariant tr)
+    (pf_pre_x: pre_x tr)                                            -- prove x's precondition now
+    (pf_next: ∀ tr_mid x', post_x x' tr_mid →                        -- then, for whatever x returned
+                Trace.Invariant tr_mid → tr ≤ tr_mid →             --   on the longer, still-invariant trace
+                WP.wp (f x') post_f tr_mid)                         --   the rest of the program is fine
+  : WP.wp (x >>= f) post_f tr</pre>
+    <p>Read it as a recipe: discharge <code>x</code>'s precondition on the current trace, then continue with a fresh trace <code>tr_mid</code>, the result <code>x'</code>, <code>x</code>'s postcondition about them, the invariant, and the fact that <code>tr_mid</code> extends <code>tr</code>. <code>finish_wp</code> handles the last action, where the continuation is the final postcondition.</p>
+    <table class="mech">
+      <thead><tr><th>program</th><th>pre</th><th>post</th></tr></thead>
+      <tbody>
+        <tr><td><code>pure x</code></td><td><code>True</code></td><td><code>res = x</code></td></tr>
+        <tr><td><code>failure</code></td><td><code>True</code></td><td><code>True</code></td></tr>
+        <tr><td><code>guard b</code></td><td><code>True</code></td><td><code>b</code></td></tr>
+        <tr><td><code>guard (v = true)</code> with a pure triple for <code>v</code></td><td><code>v</code>'s pre</td><td><code>v</code>'s post at <code>true</code></td></tr>
+        <tr><td><code>liftM x</code> for <code>x : Err a</code></td><td><code>x</code>'s pre</td><td><code>x</code>'s post</td></tr>
+      </tbody>
+    </table>
+    <div class="cards"><div data-card="DY.Traceful.bind_wp"></div><div data-card="DY.Traceful.finish_wp"></div><div data-card="DY.instHoareTripleTracefulUnitGuardTrue"></div><div data-card="DY.instHoareTripleGhostLiftMOfWPLift"></div></div>
+  </section>
+
+  <section id="step">
+    <h2>7 · The <code>step</code> tactic</h2>
+    <p><code>step</code> automates the recipe. On a goal <code>wp (x >>= f) post tr</code> it:</p>
+    <ol>
+      <li>applies <code>bind_wp</code>, which fixes <code>x</code> and <code>f</code> by unification;</li>
+      <li>takes the ghost from <code>with ⟨ … ⟩</code>, checking its type against the action's declared ghost type, or searches for one, or uses <code>()</code>;</li>
+      <li>finds <code>x</code>'s spec by typeclass search on <code>HoareTripleGhost x ghost ?pre ?post</code>;</li>
+      <li>proves the precondition with <code>grind</code>, or with your tactic if you wrote <code>step by tac</code>;</li>
+      <li>introduces the new trace, the result named after the binder in your code, and the postcondition split into separate hypotheses;</li>
+      <li>moves every earlier hypothesis about the old trace to the new trace using the monotonicity lemmas, then renames the new trace back to <code>tr</code>, so you always see one trace.</li>
+    </ol>
+    <p>On a <code>let x := v</code> it uses <code>v</code>'s pure triple instead, and the trace does not change. A few companions handle awkward code:</p>
+    <table class="mech">
+      <thead><tr><th>tactic</th><th>what it is for</th></tr></thead>
+      <tbody>
+        <tr><td><code>step by tac</code></td><td>the precondition needs more than plain <code>grind</code>, typically unfolding a state invariant</td></tr>
+        <tr><td><code>step with ⟨ g ⟩</code></td><td>supply a ghost argument</td></tr>
+        <tr><td><code>step_let x with ⟨ g ⟩</code></td><td>prove a pure triple for a <code>let</code> introduced earlier</td></tr>
+        <tr><td><code>step_intro</code></td><td>introduce a <code>let</code> without proving anything yet, to prove facts about it later. <code>Server.receive</code> does this for <code>sig</code>, because the event the signing predicate refers to is logged after the <code>let</code></td></tr>
+        <tr><td><code>hoist</code></td><td>pull complex arguments of the next action into separate <code>let</code>s, so each can be handled on its own</td></tr>
+        <tr><td><code>mark_non_monotone h</code></td><td>tell the monotonicity pass to drop <code>h</code> rather than transport it. <code>logEvent.spec</code> uses it, since an event invariant has no general "later" lemma</td></tr>
+      </tbody>
+    </table>
+    <div class="cards"><div data-card="_private.DY.Meta.Step.Init.0.DY.Step.evalStep" data-label="evalStep (the tactic's entry point)"></div><div data-card="_private.DY.Meta.Step.Init.0.DY.Step.solvePrecondition" data-label="solvePrecondition"></div></div>
+  </section>
+
+  <section id="walk">
+    <h2>8 · <code>Client.initiate</code>, step by step</h2>
+    <p>The spec is <code>HoareTriple (Client.initiate me) (fun _ => True) (fun _ _ => True)</code>. Step through it: the left side is the program with the current action highlighted, the right side is the proof context after the tactic. Hypothesis names are as the tactic introduces them; Lean may display some as inaccessible.</p>
+    <div class="stepper" id="stepper">
+      <div class="stepper-head"><b>Client.initiate.spec</b><span class="count" id="st-count"></span><button id="st-prev">◀ prev</button><button id="st-next">next ▶</button></div>
+      <div class="stepper-body">
+        <div><h5>Program · Specification.lean</h5><div class="code-lines" id="st-code"></div></div>
+        <div><h5>Context after the tactic</h5><div class="ctx" id="st-ctx"></div></div>
+      </div>
+      <div class="stepper-note" id="st-note"></div>
+    </div>
+    <p>The visible postconditions are all <code>True</code>. The real content is the hidden invariant conjunct, which forced the obligations at the event, the store and the send. The <a href="trace.html">trace page</a> shows the entries this step produces in a real run: indices 4 to 7.</p>
+    <div class="cards"><div data-card="DY.Example.SignedDH.Client.initiate"></div><div data-card="DY.Example.SignedDH.Client.initiate.spec"></div></div>
+  </section>
+
+  <section id="mono">
+    <h2>9 · Monotonicity: why every fact must survive growth</h2>
+    <p>After each action the trace is longer, and every earlier hypothesis was stated about the shorter trace. <code>step</code> transports them: for each hypothesis that mentions the old trace it asserts the same statement on the new trace and proves it with <code>grind</code> restricted to the <code>grind_later</code> lemma set. A hypothesis that cannot be transported is an error, "cannot monotonize", unless marked non-monotone.</p>
+    <p>The <code>grind_later</code> set contains the "later" facts the framework and protocols provide: invariants, labels, usages and publishability of bytes are stable; events stay logged; entries stay at their index; state invariants carry an <code>invariant_later</code> field; labels' corruption predicates must be monotone by construction. This is the same requirement that appears everywhere else in DyLean: anything stated about a trace must remain true as the trace grows, because some later proof will read it back.</p>
+    <div class="cards"><div data-card="DY.Bytes.Invariant.later_fast"></div><div data-card="DY.Step.nonMono"></div></div>
+  </section>
+
+  <section id="reach">
+    <h2>10 · Where triples end up</h2>
+    <p>A step's triple with <code>pre = True</code> and <code>post = True</code> is exactly what <code>ReachableImpliesInvariant</code> asks for. One instance per step, combined over the reachability config, and a four-line induction turns them into "every reachable trace has an invariant proof trace behind it". Security theorems apply that once and never mention a triple again.</p>
+    <pre class="lean-static">class ReachableImpliesInvariant (config: ReachabilityConfig) where
+  pf: ∀ input, HoareTriple (config.step input).snd (fun tr => config.PreCond input tr.erase) (fun _ _ => True)</pre>
+    <div class="cards"><div data-card="DY.ReachableImpliesInvariant"></div><div data-card="DY.Trace.Reachable_implies_Invariant"></div></div>
+  </section>
+</article>
+</div>
+<footer>The prose and the stepper are editorial, written from the source; the cards are the compiler's view of <code>../dylean</code>.</footer>
+<template id="card-template">
+  <article class="card">
+    <header class="card-head">
+      <button class="card-toggle" aria-expanded="false" aria-label="Toggle source">▸</button>
+      <div class="card-title"><code class="card-name"></code><span class="kind"></span><span class="role"></span></div>
+      <div class="card-links"><a class="src-link" target="_blank" rel="noopener">source</a><a class="proof-link" href="#" hidden>proof tree</a><button class="card-close" aria-label="Close" hidden>×</button></div>
+    </header>
+    <div class="card-notes"></div>
+    <div class="card-body" hidden><pre class="lean"></pre><div class="nested"></div></div>
+  </article>
+</template>
+<script>
+(function(){
+  const code=[
+    'def Client.initiate (me: Participant) : Traceful (Nat × Nat) := do',
+    '  let xSk ← Random.genRand 32',
+    '  let xPk := DiffieHellman.dhPk xSk',
+    '  ProtocolEvent.logEvent (ClientInitiateEvent me xPk)',
+    '  let stHandle ← storeLocalState me ({ xPk, xSk }: ClientInitiateState)',
+    '  let msgHandle ← sendMessage (serialize ({ xPk } : ClientMessage))',
+    '  return (stHandle, msgHandle)'];
+  const S=[
+    {line:0, tactic:'apply HoareTriple.mk; unfold Client.initiate', ctx:[['me','Participant']], goal:'hoareTriple (do …) (fun _ => True) (fun _ _ => True)', note:'Start: the class goal is opened and the definition unfolded. Nothing about the trace yet.'},
+    {line:1, tactic:'step with ⟨ fun xSk => clientLabel me (dhPk xSk), Usage.nothing ⟩', ctx:[['me','Participant'],['tr','ProofTrace'],['h_inv','tr.Invariant'],['xSk','Bytes',1],['h₁','xSk.Invariant tr',1],['h₂','xSk.label tr = clientLabel me (dhPk xSk)',1],['h₃','xSk.HasUsage Usage.nothing tr',1]], goal:'wp (let xPk := dhPk xSk; …) _ tr', note:'First the triple is unfolded: <b>tr</b> and the invariant are introduced, the True precondition is dropped. Then <b>bind_wp</b> on genRand with <b>genRand.spec</b>. The ghost tuple matches <code>(Bytes → Label) × Usage</code>. <span class="ob">Obligation:</span> True. <b>Added:</b> the fresh bytes and the three facts of its postcondition. The label is a choice made here.'},
+    {line:2, tactic:'step', ctx:[['me','Participant'],['tr','ProofTrace'],['h_inv','tr.Invariant'],['xSk','Bytes'],['h₁','xSk.Invariant tr'],['h₂','xSk.label tr = clientLabel me (dhPk xSk)'],['h₃','xSk.HasUsage Usage.nothing tr'],['xPk','Bytes := dhPk xSk',1],['h₄','xPk.Invariant tr',1],['h₅','xPk.label tr = Label.pub',1]], goal:'wp (logEvent (ClientInitiateEvent me xPk) >>= …) _ tr', note:'A <b>let</b>, so the pure triple of <b>dhPk</b>. <span class="ob">Obligation:</span> <code>xSk.Invariant tr</code>, already in context. <b>Added:</b> xPk is valid and public. The trace does not change.'},
+    {line:3, tactic:'step', ctx:[['me','Participant'],['tr','ProofTrace'],['h_inv','tr.Invariant'],['xSk','Bytes'],['h₁','xSk.Invariant tr'],['h₂','xSk.label tr = clientLabel me (dhPk xSk)'],['h₃','xSk.HasUsage Usage.nothing tr'],['xPk','Bytes := dhPk xSk'],['h₄','xPk.Invariant tr'],['h₅','xPk.label tr = Label.pub'],['h₆','tr.erase.EventLogged (ClientInitiateEvent me xPk)',1]], goal:'wp (storeLocalState me {xPk, xSk} >>= …) _ tr', note:'<b>bind_wp</b> on logEvent with <b>logEvent.spec</b>. <span class="ob">Obligation:</span> the event invariant <code>xPk.Invariant tr ∧ xPk.dhSkLabel tr = clientLabel me xPk</code>, which grind gets from h₂ and h₄. <b>Added:</b> the event is logged. Every earlier hypothesis was moved to the new, longer trace by the monotonicity pass.'},
+    {line:4, tactic:'step by simp only [LocalStateInv.invariant]; grind', ctx:[['me','Participant'],['tr','ProofTrace'],['h_inv','tr.Invariant'],['…','the facts above, transported'],['stHandle','Nat',1]], goal:'wp (sendMessage (serialize {xPk}) >>= …) _ tr', note:'<b>storeLocalState.spec</b>. <span class="ob">Obligation:</span> <code>ClientInitiateStateInv</code>: <code>xPk = dhPk xSk ∧ xPk.Publishable tr ∧ xSk.Invariant tr ∧ xSk.label tr = clientLabel me xPk</code>. Plain grind needs the invariant unfolded, hence <code>by</code>. <b>Added:</b> only the handle; the post is True.'},
+    {line:5, tactic:'step', ctx:[['me','Participant'],['tr','ProofTrace'],['h_inv','tr.Invariant'],['…','the facts above, transported'],['stHandle','Nat'],['msgHandle','Nat',1]], goal:'wp (return (stHandle, msgHandle)) _ tr', note:'<b>sendMessage.spec</b>. <span class="ob">Obligation:</span> <code>(serialize {xPk}).Publishable tr</code>: valid, and public because xPk is. <b>Added:</b> the handle. The attacker now knows xPk.'},
+    {line:6, tactic:'step; grind', ctx:[['me','Participant'],['tr','ProofTrace'],['h_inv','tr.Invariant'],['…','the facts above'],['h₇','x = (stHandle, msgHandle)',1]], goal:'(fun _ _ => True) x tr', note:'Not a bind: <b>finish_wp</b> with the triple for <code>pure</code>. The final goal is the spec\'s postcondition, <code>True</code>, closed by grind. The proof is complete, and with it the guarantee that the four appends were all allowed.'}
+  ];
+  let i=0;
+  const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  function show(){
+    const s=S[i];
+    document.getElementById('st-count').textContent=`tactic ${i+1} / ${S.length}: ${s.tactic}`;
+    document.getElementById('st-code').innerHTML=code.map((l,k)=>`<span class="ln ${k===s.line?'now':(k<s.line?'done':'')}">${esc(l)}</span>`).join('');
+    document.getElementById('st-ctx').innerHTML=s.ctx.map(([n,t,isNew])=>`<div class="h ${isNew?'new':''}"><b>${esc(n)}</b><span>: ${esc(t)}</span></div>`).join('')+`<div class="goal">⊢ ${esc(s.goal)}</div>`;
+    document.getElementById('st-note').innerHTML=s.note;
+    document.getElementById('st-prev').disabled=i===0; document.getElementById('st-next').disabled=i===S.length-1;
+  }
+  document.getElementById('st-prev').onclick=()=>{ if(i>0){i--;show();} };
+  document.getElementById('st-next').onclick=()=>{ if(i<S.length-1){i++;show();} };
+  show();
+})();
+</script>
+</body></html>

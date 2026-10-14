@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101923"><title>DyLean · Labels</title><link rel="icon" href="data:,">
+<meta name="description" content="Labels in DyLean: corruption predicates on traces, canFlow, join and meet, how every byte string gets a label, usages, and how compromise makes labels corrupt.">
+<link rel="stylesheet" href="explainer.css"><link rel="stylesheet" href="cards.css">
+<style>
+.lattice{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;align-items:center;max-width:640px;margin:16px 0;padding:16px;border:1px dashed var(--border);border-radius:12px;background:#0e1620;font-size:14px}
+.lattice .pole{font:600 13px var(--mono);padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--panel);text-align:center}
+.lattice .pole.secret{color:var(--accent);border-color:#396359}.lattice .pole.pub{color:var(--rose);border-color:#5a3a44}
+.lattice .mid{color:var(--muted)}
+.lattice .arrow{grid-column:1;text-align:center;color:var(--muted);font-size:18px;line-height:1}
+.sim{border:1px solid var(--border);border-radius:12px;background:var(--panel);margin:18px 0;overflow:hidden}
+.sim-head{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center}
+.sim-head b{font-size:13px;width:100%;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-size:11px}
+.sim-head label{display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer}
+.sim-head input{accent-color:var(--rose);width:16px;height:16px}
+.sim table{width:100%;border-collapse:collapse;font-size:13.5px}
+.sim td,.sim th{padding:9px 14px;border-top:1px solid var(--border);text-align:left;vertical-align:top}
+.sim th{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;border-top:0}
+.sim td code{font-size:12.5px}
+.sim .st{font:700 11px var(--mono);padding:2px 8px;border-radius:999px;white-space:nowrap}
+.sim .st.ok{color:var(--accent);background:#15282a}.sim .st.bad{color:var(--rose);background:#2a1a20}
+.sim-foot{padding:12px 16px;border-top:1px solid var(--border);background:#0e1620;font-size:14px;line-height:1.6}
+.sim-foot b{color:var(--accent)}.sim-foot .bad{color:var(--rose)}
+@media(max-width:620px){.sim table{display:block;overflow-x:auto}.sim td,.sim th{padding:8px 10px;min-width:110px}.lattice{grid-template-columns:1fr}}
+</style>
+<script defer src="toolkit-data.js"></script><script defer src="cards.js"></script><script defer src="explainer.js"></script></head>
+<body>
+<header><a class="brand" href="index.html"><b>δ</b> DyLean <span>/ labels</span></a><nav class="header-links"><a href="trace.html">A real trace</a><a href="hoare.html">Hoare triples</a><a href="state.html">State</a><a href="source.html" target="_blank" rel="noopener">Source browser ↗</a></nav></header>
+
+<div class="layout">
+<nav class="toc" aria-label="Contents">
+  <p class="eyebrow">CONTENTS</p>
+  <a href="#what">1 · A label is a corruption predicate</a>
+  <a href="#flow">2 · canFlow</a>
+  <a href="#combinators">3 · pub, secret, join, meet</a>
+  <a href="#bytes">4 · How bytes get labels</a>
+  <a href="#random" class="sub">Random bytes: the label is chosen</a>
+  <a href="#derived" class="sub">Derived bytes: the label is computed</a>
+  <a href="#stable" class="sub">Labels never change</a>
+  <a href="#usage">5 · Usages</a>
+  <a href="#pub">6 · Publishable and KnowableBy</a>
+  <a href="#corrupt">7 · How labels become corrupt</a>
+  <a href="#signeddh">8 · SignedDH's labels</a>
+  <a href="#sim" class="sub">Try it</a>
+  <a href="#more">9 · Richer label designs</a>
+</nav>
+
+<article>
+  <p class="eyebrow">SECRECY</p>
+  <h1>Labels</h1>
+  <p class="lede">Every byte string in a proof trace has a <b>label</b>, and every secrecy claim in DyLean is ultimately "this label is not corrupt unless something bad happened". A label is not a set of principals and not a level in a fixed lattice: it is <b>a predicate on the execution trace that says when the bytes may be known by the attacker</b>. This page builds up how labels are defined, combined, attached to bytes, and broken.</p>
+
+  <section id="what">
+    <h2>1 · A label is a corruption predicate</h2>
+    <pre class="lean-static">structure Label where
+  isCorrupt: ExecTrace → Prop
+  isCorruptLater: ∀ tr1 tr2, tr1 ≤ tr2 → isCorrupt tr1 → isCorrupt tr2
+    := by grind</pre>
+    <p>That is the whole definition. <code>l.isCorrupt tr</code> means "on this trace, bytes labelled <code>l</code> are allowed to be known by the attacker". The second field says corruption is permanent: once a label is corrupt, it stays corrupt on every extension. Two labels are equal when their predicates agree.</p>
+    <p>Labels are predicates on the <em>execution</em> trace, the one the attacker sees. Byte labels are computed from the proof trace, and their corruption is evaluated on <code>tr.erase</code>.</p>
+    <div class="cards"><div data-card="DY.Label"></div></div>
+  </section>
+
+  <section id="flow">
+    <h2>2 · <code>canFlow</code>: at most as secret as</h2>
+    <pre class="lean-static">def Label.canFlow (l1 l2: Label) (tr: ExecTrace) : Prop :=
+  ∀ trLater, tr ≤ trLater → l2.isCorrupt trLater → l1.isCorrupt trLater</pre>
+    <p><code>l1.canFlow l2</code> says: whenever <code>l2</code> is corrupt, so is <code>l1</code>. Bytes labelled <code>l1</code> may be handed to anyone allowed to know <code>l2</code>, because no information becomes available that was not already allowed.</p>
+    <p>The quantifier over later traces is deliberate. A plain implication at <code>tr</code> would be broken by a future compromise of <code>l2</code> that did not compromise <code>l1</code>. Quantifying over every extension makes <code>canFlow</code> itself stable under trace growth, which is what lets it appear in invariants that are read back later.</p>
+    <table class="mech">
+      <thead><tr><th>lemma</th><th>statement</th><th>used by grind?</th></tr></thead>
+      <tbody>
+        <tr><td><code>canFlowRefl</code></td><td><code>l.canFlow l tr</code></td><td>yes</td></tr>
+        <tr><td><code>canFlowTrans</code></td><td>transitivity</td><td>no: passed explicitly, <code>grind [canFlowTrans]</code></td></tr>
+        <tr><td><code>Label.canFlowLater</code></td><td>stable as the trace grows</td><td>yes, and in <code>grind_later</code></td></tr>
+        <tr><td><code>canFlowPubEqIsCorrupt</code></td><td><code>l.isCorrupt tr = l.canFlow Label.pub tr</code></td><td>yes</td></tr>
+      </tbody>
+    </table>
+    <div class="cards"><div data-card="DY.Label.canFlow"></div><div data-card="DY.canFlowTrans"></div><div data-card="DY.canFlowPubEqIsCorrupt"></div></div>
+  </section>
+
+  <section id="combinators">
+    <h2>3 · <code>pub</code>, <code>secret</code>, <code>join</code>, <code>meet</code></h2>
+    <pre class="lean-static">def Label.pub    : Label := { isCorrupt tr := True }
+def Label.secret : Label := { isCorrupt tr := False }
+def Label.join (l1 l2: Label) : Label := { isCorrupt tr := l1.isCorrupt tr ∨ l2.isCorrupt tr }
+def Label.meet (l1 l2: Label) : Label := { isCorrupt tr := l1.isCorrupt tr ∧ l2.isCorrupt tr }</pre>
+    <div class="lattice" aria-label="Ordering of labels by secrecy">
+      <span class="pole secret">secret</span><span class="mid">never corrupt: everything flows to it</span>
+      <span class="arrow">↓</span><span></span>
+      <span class="pole">l₁.meet l₂</span><span class="mid">corrupt only when both are: more secret than either</span>
+      <span class="arrow">↓</span><span></span>
+      <span class="pole">l₁, l₂</span><span class="mid"></span>
+      <span class="arrow">↓</span><span></span>
+      <span class="pole">l₁.join l₂</span><span class="mid">corrupt when either is: less secret than either</span>
+      <span class="arrow">↓</span><span></span>
+      <span class="pole pub">pub</span><span class="mid">always corrupt: flows to everything</span>
+    </div>
+    <div class="callout warn"><b>Watch the names.</b> In DyLean, <code>join</code> is the <em>less</em> secret combination: it is corrupt if either side is. Think of it as "the union of who may know". A value known to two parties, such as a DH shared secret, gets the <code>join</code> of their labels, because it leaks if either party leaks. <code>meet</code> is the <em>more</em> secret combination, used for a concatenation, which only leaks entirely if both halves do.</div>
+    <table class="mech">
+      <thead><tr><th>lemma</th><th>statement</th></tr></thead>
+      <tbody>
+        <tr><td><code>joinIsCorrupt</code></td><td><code>(l1.join l2).isCorrupt tr ↔ l1.isCorrupt tr ∨ l2.isCorrupt tr</code>. This is the lemma that splits <code>client_secrecy</code> into two disjuncts</td></tr>
+        <tr><td><code>joinEq</code></td><td><code>l1.canFlow (l2.join l3) = (l1.canFlow l2 ∧ l1.canFlow l3)</code></td></tr>
+        <tr><td><code>meetEq</code></td><td><code>(l1.meet l2).canFlow l3 = (l1.canFlow l3 ∧ l2.canFlow l3)</code></td></tr>
+        <tr><td><code>join_pub_left</code></td><td><code>pub.join l = pub</code></td></tr>
+        <tr><td><code>pubCanFlow</code>, <code>secret.canFlow</code></td><td><code>pub</code> flows to every label; every label flows to <code>secret</code></td></tr>
+      </tbody>
+    </table>
+    <div class="cards"><div data-card="DY.Label.join"></div><div data-card="DY.Label.meet"></div><div data-card="DY.Label.joinIsCorrupt"></div><div data-card="DY.Label.joinEq"></div></div>
+  </section>
+
+  <section id="bytes">
+    <h2>4 · How bytes get labels</h2>
+    <p><code>Bytes.label b tr</code> is computed recursively over the structure of <code>b</code>. Each primitive contributes one rule, and <code>#combine</code> assembles them into one function.</p>
+    <h3 id="random">Random bytes: the label is chosen</h3>
+    <p>Fresh random bytes are the only leaves that carry an arbitrary label, and that label is not computed: it was <em>recorded</em> in the proof trace when the bytes were generated.</p>
+    <pre class="lean-static">label := fun {timestamp, size := _} _rec tr =>
+  match (tr.at? timestamp: Option ProofEntryT) with
+  | some entry => entry.label       -- the ghost label written when genRand ran
+  | none => Label.pub</pre>
+    <p>The spec of <code>genRand</code> takes the label as a ghost argument, as a function of the generated bytes, so a label can mention the bytes' own public key: <code>fun xSk => clientLabel me (dhPk xSk)</code>. Choosing a label is free. What it costs comes later: every place the bytes flow must be shown to respect it.</p>
+    <h3 id="derived">Derived bytes: the label is computed</h3>
+    <table class="mech">
+      <thead><tr><th>term</th><th>label</th><th>why</th></tr></thead>
+      <tbody>
+        <tr><td>literal</td><td><code>pub</code></td><td>constants are known to everyone</td></tr>
+        <tr><td><code>concat a b</code></td><td><code>a.label.meet b.label</code></td><td>the whole is only fully known if both parts are</td></tr>
+        <tr><td><code>hash x</code></td><td><code>x.label</code></td><td>a hash reveals what its input reveals, under the random-oracle reading</td></tr>
+        <tr><td><code>dhPk sk</code></td><td><code>pub</code></td><td>public keys are public. <code>dhSkLabel</code> remembers <code>sk</code>'s label</td></tr>
+        <tr><td><code>dh pk sk</code></td><td><code>sk.label.join pk.dhSkLabel</code>, or <code>pub</code> if <code>pk</code> is not a DH public key</td><td>the shared secret leaks if either private share leaks</td></tr>
+        <tr><td><code>vk sk</code></td><td><code>pub</code></td><td><code>signkeyLabel</code> remembers <code>sk</code>'s label</td></tr>
+        <tr><td><code>sign sk n m</code></td><td><code>m.label</code></td><td>a signature does not hide its message</td></tr>
+        <tr><td><code>kdfExtract salt ikm</code></td><td><code>salt.label.meet ikm.label</code></td><td></td></tr>
+        <tr><td><code>kdfExpand prk info len</code></td><td>chosen by the protocol via <code>KdfExpandInvariant</code>, which must flow to <code>prk</code>'s label</td><td>key schedules derive differently scoped keys</td></tr>
+      </tbody>
+    </table>
+    <div class="cards"><div data-card="DY.Bytes.label"></div><div data-card="DY.Random.Random.invariants" data-label="Random: label read from the trace"></div><div data-card="DY.DiffieHellman.Dh.invariants" data-label="dh: label is a join"></div><div data-card="DY.Bytes.dhSkLabel"></div></div>
+
+    <h3 id="stable">Labels never change</h3>
+    <pre class="lean-static">theorem Bytes.label_later : tr1 ≤ tr2 → Bytes.WellFormed b tr1 → Bytes.label b tr1 = Bytes.label b tr2</pre>
+    <p>A label is a fixed secrecy class decided when the bytes are made. For random bytes this holds because the entry at the timestamp never changes as the trace grows; every primitive must prove its rule preserves it. It is what lets an event invariant like <code>k.label = clientLabel ⊔ serverLabel</code>, proved at index 13, still be used by the secrecy theorem on a longer trace.</p>
+    <div class="cards"><div data-card="DY.Bytes.label_later"></div></div>
+  </section>
+
+  <section id="usage">
+    <h2>5 · Usages: what a key is for</h2>
+    <p>A label says who may know bytes. A <b>usage</b> says what cryptographic role they play.</p>
+    <pre class="lean-static">structure Usage where
+  type: String
+  tag: String
+  data: Option Bytes
+
+def Bytes.HasUsage (b: Bytes) (usg: Usage) (tr: ProofTrace) :=
+  b.usage tr = usg ∨ (b.label tr).canFlow Label.pub tr.erase      -- public bytes have every usage</pre>
+    <p>Like labels, usages are recorded for random bytes and computed otherwise; most constructors give <code>Usage.nothing</code>. Signatures check them: the honest case of a signature's invariant requires the key's usage to have type <code>"SigKey"</code>, and passes the usage to the protocol's signing predicate. SignedDH's usage encodes the server's name, so the predicate can say which server signed:</p>
+    <pre class="lean-static">def mkLongTermUsage (me: Participant) : Usage :=
+  { type := "SigKey", tag := "SignedDH PKI", data := serialize ({ principal := me }: LongTermKeyUsage) }</pre>
+    <div class="cards"><div data-card="DY.Usage"></div><div data-card="DY.Bytes.HasUsage"></div><div data-card="DY.Example.SignedDH.mkLongTermUsage"></div></div>
+  </section>
+
+  <section id="pub">
+    <h2>6 · <code>Publishable</code> and <code>KnowableBy</code></h2>
+    <pre class="lean-static">def Bytes.Publishable (b: Bytes) (tr: ProofTrace) := b.Invariant tr ∧ (b.label tr).canFlow Label.pub tr.erase
+def Bytes.KnowableBy (l: Label) (b: Bytes) (tr: ProofTrace) := b.Invariant tr ∧ (b.label tr).canFlow l tr.erase</pre>
+    <p>By <code>canFlowPubEqIsCorrupt</code>, "label flows to <code>pub</code>" is the same as "label is corrupt". So <code>Publishable</code> means: well-formed bytes whose label is already corrupt. Sending a message requires it. The central theorem goes the other way:</p>
+    <pre class="lean-static">theorem Bytes.AttackerKnows_implies_Publishable : tr.Invariant → Bytes.AttackerKnows b tr.erase → b.Publishable tr</pre>
+    <p>Anything the attacker knows has a corrupt label. Every secrecy theorem is this, plus an argument about which label the secret has and when that label is corrupt.</p>
+    <div class="cards"><div data-card="DY.Bytes.Publishable"></div><div data-card="DY.Bytes.KnowableBy"></div><div data-card="DY.Bytes.AttackerKnows_implies_Publishable"></div></div>
+  </section>
+
+  <section id="corrupt">
+    <h2>7 · How labels become corrupt</h2>
+    <p>Protocol labels are built from events in the trace, almost always compromise events. The chain in SignedDH:</p>
+    <div class="flow" aria-label="How a compromise makes a label corrupt">
+      <span class="box user">compromise 6<small>attacker step</small></span>
+      <span class="arr">→<small>logs</small></span>
+      <span class="box">CompromiseEvent {Alice, {xPk, xSk}}<small>in the trace</small></span>
+      <span class="arr">→<small>so</small></span>
+      <span class="box">LocalStateCompromised "Alice" {xPk, xSk}<small>holds</small></span>
+      <span class="arr">→<small>so</small></span>
+      <span class="box">ClientEphemeralStateCompromised "Alice" xPk<small>holds</small></span>
+      <span class="arr">→<small>=</small></span>
+      <span class="box hot">clientLabel "Alice" xPk is corrupt</span>
+    </div>
+    <p>The framework provides three label builders on top of events:</p>
+    <ul>
+      <li><code>ProtocolEvent.label ev</code>: corrupt once <code>ev</code> is logged.</li>
+      <li><code>PersistentLocalState.label p st</code>: corrupt once that exact state of that participant is compromised. Compromisable states must show their contents are <code>KnowableBy</code> this label, which is how compromise can legally publish them. The <a href="state.html#statelabel">state page</a> has the details.</li>
+      <li><code>LongTermKeys.label name p pk</code>: corrupt once the secret key behind <code>pk</code> is compromised.</li>
+    </ul>
+    <div class="cards"><div data-card="DY.ProtocolEvent.label"></div><div data-card="DY.PersistentLocalState.label"></div><div data-card="DY.LongTermKeys.label"></div></div>
+  </section>
+
+  <section id="signeddh">
+    <h2>8 · SignedDH's labels</h2>
+    <pre class="lean-static">def clientLabel (me: Participant) (xPk: Bytes) : Label where
+  isCorrupt tr := ClientEphemeralStateCompromised me xPk tr
+def serverLabel (me: Participant) (yPk: Bytes) : Label where
+  isCorrupt tr := ServerEphemeralStateCompromised me yPk tr</pre>
+    <ul>
+      <li><code>xSk</code> gets <code>clientLabel me xPk</code> and <code>ySk</code> gets <code>serverLabel me yPk</code>: each ephemeral secret is corrupt exactly when a state holding it leaks. Keying them by the public share makes them session-specific.</li>
+      <li>The signing nonce gets <code>Label.secret</code>. The signature invariant requires the signing key's label to flow to the nonce's label, because leaking a nonce can reveal the key; <code>secret</code> satisfies that for any key.</li>
+      <li><code>k = hash (dh xPk ySk)</code>, so by the hash and DH rules its label is <code>clientLabel.join serverLabel</code>: it leaks if either side's state leaks.</li>
+    </ul>
+    <p>The theorem's three disjuncts come straight out of labels. If the attacker knows <code>k</code>, its label is corrupt. If the client's event invariant is in its honest case, that label is the join, and <code>joinIsCorrupt</code> splits it into "client state compromised" or "server state compromised". If it is in the other case, the server's long-term key label was corrupt before the event.</p>
+
+    <h3 id="sim">Try it</h3>
+    <p>Choose which compromises happened in a run and see which labels are corrupt, whether the attacker may know <code>k</code>, and which disjunct of <code>client_secrecy</code> then holds. This table evaluates the label definitions above in your browser, for the honest run on the <a href="trace.html">trace page</a> with the chosen compromises appended. It is an illustration, not Lean.</p>
+    <div class="sim" id="sim-box">
+      <div class="sim-head"><b>Compromises in this run</b>
+        <label><input type="checkbox" data-c="ci"> Alice's ClientInitiateState</label>
+        <label><input type="checkbox" data-c="cf"> Alice's ClientFinishState</label>
+        <label><input type="checkbox" data-c="sf"> Bob's ServerFinishState</label>
+        <label><input type="checkbox" data-c="ltk"> Bob's signing key, before Alice finished</label>
+      </div>
+      <table><thead><tr><th>label</th><th>defined as</th><th>status</th></tr></thead><tbody id="sim-rows"></tbody></table>
+      <div class="sim-foot" id="sim-foot"></div>
+    </div>
+  </section>
+
+  <section id="more">
+    <h2>9 · Richer label designs in other examples</h2>
+    <ul>
+      <li><b>SignedDHKEM</b> derives the session key from a DH secret and a KEM secret concatenated, so its label is a <code>meet</code> of two joins. Matching that, the theorem's disjunct is a <em>conjunction</em>: the attacker needs to break both halves. Its randomness labels also <code>join</code> in "this public key was broken" labels, modelling a primitive the attacker may break outright.</li>
+      <li><b>Ratchet</b> uses labels that depend on <em>when</em> things happened, such as <code>labelBeforeEvent</code>: corrupt only if the long-term key was compromised before the receiver accepted an update. Such labels are how post-compromise security is stated.</li>
+    </ul>
+    <div class="cards"><div data-card="DY.Example.Ratchet.labelBeforeEvent"></div><div data-card="DY.DiffieHellman'.Broken.label"></div></div>
+  </section>
+</article>
+</div>
+<footer>The prose and the table in section 8 are editorial; the cards are the compiler's view of <code>../dylean</code>.</footer>
+<template id="card-template">
+  <article class="card">
+    <header class="card-head">
+      <button class="card-toggle" aria-expanded="false" aria-label="Toggle source">▸</button>
+      <div class="card-title"><code class="card-name"></code><span class="kind"></span><span class="role"></span></div>
+      <div class="card-links"><a class="src-link" target="_blank" rel="noopener">source</a><a class="proof-link" href="#" hidden>proof tree</a><button class="card-close" aria-label="Close" hidden>×</button></div>
+    </header>
+    <div class="card-notes"></div>
+    <div class="card-body" hidden><pre class="lean"></pre><div class="nested"></div></div>
+  </article>
+</template>
+<script>
+(function(){
+  const c={ci:false,cf:false,sf:false,ltk:false};
+  const st=v=>v?'<span class="st bad">corrupt</span>':'<span class="st ok">not corrupt</span>';
+  function render(){
+    const client=c.ci||c.cf, server=c.sf, k=client||server;
+    const rows=[
+      ['<code>clientLabel "Alice" xPk</code>','<code>ClientEphemeralStateCompromised</code>: either client state holding <code>xPk</code> leaked',client],
+      ['<code>serverLabel "Bob" yPk</code>','<code>ServerEphemeralStateCompromised</code>: the server state holding <code>yPk</code> leaked',server],
+      ['<code>LongTermKeys.label … "Bob" vkBob</code>','Bob\'s secret signing key state leaked',c.ltk],
+      ['label of <code>xSk</code>','<code>clientLabel</code>',client],
+      ['label of <code>ySk</code>','<code>serverLabel</code>',server],
+      ['label of <code>k</code>','<code>clientLabel.join serverLabel</code>: corrupt if either is',k],
+      ['label of nonce','<code>Label.secret</code>',false]
+    ];
+    document.getElementById('sim-rows').innerHTML=rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td>${'<td>'+st(r[2])+'</td>'}</tr>`).join('');
+    const holds=[]; if(c.ltk) holds.push('the first (Bob\'s long-term key compromised before time)'); if(client) holds.push('the second (client ephemeral state compromised)'); if(server) holds.push('the third (server ephemeral state compromised)');
+    let foot;
+    if(!k && !c.ltk) foot='<b>k\'s label is not corrupt.</b> In this run the attacker cannot know <code>k</code>: by <code>AttackerKnows_implies_Publishable</code> it would be publishable, so its label would be corrupt. None of the theorem\'s disjuncts hold, which is consistent: the hypothesis "the attacker knows k" is false here.';
+    else if(!k && c.ltk) foot='<b>k\'s label is still not corrupt</b>, because in this honest run the client\'s event invariant is in its first case and k is guarded by the two ephemeral labels. But the theorem\'s first disjunct now holds anyway: with Bob\'s signing key, the attacker <em>could</em> have run a different trace, forging the signature, in which the client\'s event invariant is in its second case and nothing protects k. The theorem must cover that trace too, so it gives up in this situation.';
+    else foot=`<span class="bad">k's label is corrupt</span>, so the attacker may know <code>k</code>, and the theorem is satisfied by ${holds.join(' and ')}.${c.ci&&!c.cf&&!server&&!c.ltk?' This is exactly the second scenario on the trace page.':''}`;
+    document.getElementById('sim-foot').innerHTML=foot;
+  }
+  document.querySelectorAll('#sim-box input').forEach(i=>i.addEventListener('change',()=>{ c[i.dataset.c]=i.checked; render(); }));
+  render();
+})();
+</script>
+</body></html>

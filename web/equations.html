@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101923"><title>DyLean · Equational theories</title><link rel="icon" href="data:,">
+<meta name="description" content="How DyLean defines cryptographic primitives: symbolic bytes as a free term algebra, equations built into smart constructors, attacker rules, per-primitive invariants, and adding a primitive of your own.">
+<link rel="stylesheet" href="explainer.css"><link rel="stylesheet" href="cards.css">
+<script defer src="toolkit-data.js"></script><script defer src="cards.js"></script><script defer src="explainer.js"></script></head>
+<body>
+<header><a class="brand" href="index.html"><b>δ</b> DyLean <span>/ equational theories</span></a><nav class="header-links"><a href="labels.html">Labels</a><a href="combine.html">How #combine works</a><a href="trace.html">A real trace</a><a href="source.html" target="_blank" rel="noopener">Source browser ↗</a></nav></header>
+
+<div class="layout">
+<nav class="toc" aria-label="Contents">
+  <p class="eyebrow">CONTENTS</p>
+  <a href="#bytes">1 · Symbolic bytes</a>
+  <a href="#catalog">2 · The primitives</a>
+  <a href="#equations">3 · Where the equations live</a>
+  <a href="#dh" class="sub">Diffie–Hellman normalises</a>
+  <a href="#checks" class="sub">Signatures and splits check</a>
+  <a href="#meta" class="sub">Why plain = is enough</a>
+  <a href="#anatomy">4 · Anatomy of a primitive: Hash</a>
+  <a href="#attacker">5 · Attacker rules</a>
+  <a href="#invariants">6 · Invariants: the security assumption</a>
+  <a href="#broken" class="sub">Choosing a weaker assumption</a>
+  <a href="#random">7 · Random bytes</a>
+  <a href="#formats">8 · Messages: literals and concat</a>
+  <a href="#new">9 · Adding a primitive</a>
+</nav>
+
+<article>
+  <p class="eyebrow">CRYPTOGRAPHY</p>
+  <h1>Equational theories</h1>
+  <p class="lede">In a Dolev–Yao model, cryptography is symbolic: a hash is the term <code>hash(x)</code>, not 32 bytes, and the only facts about it are the equations you state. DyLean builds <code>Bytes</code> as a <b>free term algebra assembled from modular primitives</b>, puts each equation <b>inside a smart constructor</b> so equal things are literally equal terms, and gives each primitive three more ingredients: what the attacker can compute with it, what invariant honest uses satisfy, and the proofs that tie the two together.</p>
+
+  <section id="bytes">
+    <h2>1 · Symbolic bytes</h2>
+    <p><code>Bytes</code> is the fixpoint of a sum of functors, one per constructor, assembled by <code>#combine</code> from the primitives a protocol chooses. The <a href="combine.html#alacarte">#combine page</a> explains the construction. Two consequences matter here:</p>
+    <ul>
+      <li><b><code>Bytes</code> has decidable equality and a total order.</b> Every constructor must provide them, and the order is the lexicographic order on trees: compare constructor ids, then data, then children. Equality is syntactic.</li>
+      <li><b>It is marked irreducible.</b> You build and inspect bytes only through each primitive's API, using the generic <code>pack</code> and <code>view?</code>, and never by unfolding the representation.</li>
+    </ul>
+    <pre class="lean-static">def Bytes := ALaCarte.ContainerFor BytesF       -- @[irreducible]
+def Bytes.view? (b: Bytes) (SubF: Type → Type) … : Option (BytesView SubF)   -- is b built with this constructor?
+theorem BytesView.view_pack : (b.pack).view? SubF = some b</pre>
+    <div class="cards"><div data-card="DY.Bytes"></div><div data-card="DY.Bytes.view?"></div></div>
+  </section>
+
+  <section id="catalog">
+    <h2>2 · The primitives</h2>
+    <p>Seven files under <code>DY/EquationalTheory/</code>, plus random bytes, which are a trace action. Each exposes a small API class, implemented on <code>Bytes</code> with <code>pack</code> and <code>view?</code>.</p>
+    <table class="mech">
+      <thead><tr><th>primitive</th><th>constructors</th><th>API</th><th>equations</th></tr></thead>
+      <tbody>
+        <tr><td><code>Literal</code></td><td><code>{lit: ByteArray}</code></td><td><code>literalToBytes</code>, <code>bytesToLiteral</code></td><td>round trip both ways</td></tr>
+        <tr><td><code>Concat</code></td><td><code>{lhs, rhs}</code></td><td><code>concat</code>, <code>split buf i</code></td><td><code>split (concat a b) a.length = some (a, b)</code>. Not associative</td></tr>
+        <tr><td><code>Hash</code></td><td><code>{input}</code></td><td><code>hash</code></td><td>injective, no other</td></tr>
+        <tr><td><code>DiffieHellman</code></td><td><code>DhPk {sk}</code>, <code>Dh {pk, sk}</code></td><td><code>dhPk</code>, <code>dh</code></td><td><code>dh (dhPk a) b = dh (dhPk b) a</code></td></tr>
+        <tr><td><code>Signature</code></td><td><code>Vk {sk}</code>, <code>Sign {sk, nonce, msg}</code></td><td><code>vk</code>, <code>sign</code>, <code>verify</code></td><td><code>verify (vk sk) m (sign sk n m) = true</code></td></tr>
+        <tr><td><code>KdfExtract</code></td><td><code>{salt, ikm}</code></td><td><code>kdfExtract</code></td><td>none</td></tr>
+        <tr><td><code>KdfExpand</code></td><td><code>{prk, info, len}</code></td><td><code>kdfExpand</code></td><td>none</td></tr>
+        <tr><td><code>Random</code></td><td><code>{timestamp, size}</code></td><td><code>genRand</code> (a trace action)</td><td>none; freshness by timestamp</td></tr>
+      </tbody>
+    </table>
+    <p>Each constructor also has a length: 32 for hashes, DH values and verification keys, 64 for signatures, the literal's size, the sum for a concat. Lengths matter because message formats split on them.</p>
+  </section>
+
+  <section id="equations">
+    <h2>3 · Where the equations live</h2>
+    <p>There is no rewriting engine and no quotient type. Each equation is either built into a constructor, which returns a canonical form, or into a destructor, which checks a shape.</p>
+
+    <h3 id="dh">Diffie–Hellman normalises</h3>
+    <pre class="lean-static">dh pk sk :=
+  match pk.view? DhPk.SubF with
+  | some { sk := sk2 } =>                     -- pk is dhPk sk2: put the smaller secret first
+    if sk ≤ sk2 then ({sk := sk,  pk := ({sk := sk2}: DhPk.SubF Bytes).pack}: Dh.SubF Bytes).pack
+    else             ({sk := sk2, pk := ({sk := sk}:  DhPk.SubF Bytes).pack}: Dh.SubF Bytes).pack
+  | none => ({sk, pk}: Dh.SubF Bytes).pack     -- pk is not a DH public key: leave it raw
+
+theorem dh_commutes (sk1 sk2: Bytes) : dh (dhPk sk1) sk2 = dh (dhPk sk2) sk1</pre>
+    <p>The canonical form is "the smaller secret, with the public key of the larger", using the total order on <code>Bytes</code>. So the two parties' computations produce the identical term, and <code>dh_commutes</code> is proved by unfolding. You can see it in the <a href="trace.html">real trace</a>: Bob computes <code>dh xPk ySk</code>, Alice computes <code>dh yPk xSk</code>, and both finish events carry <code>hash(dh(dhPk(rand#8), rand#4))</code>.</p>
+    <div class="cards"><div data-card="DY.DiffieHellman.instCanDHBytes" data-label="CanDH Bytes (the smart constructors)"></div><div data-card="DY.DiffieHellman.dh_commutes"></div></div>
+
+    <h3 id="checks">Signatures and splits check instead</h3>
+    <pre class="lean-static">verify vk msg sig :=
+  match sig.view? Sign.SubF with
+  | some { sk, nonce := _, msg := msg' } => msg = msg' && vk = ({sk} : Vk.SubF Bytes).pack
+  | none => false
+
+split buf i :=
+  match buf.view? Concat.SubF with
+  | some ({ lhs, rhs }) => if lhs.length = i then some (lhs, rhs) else none
+  | none => none</pre>
+    <p><code>verify</code> does not rewrite anything: it looks inside the signature term and compares. <code>split</code> only takes apart a concat node at its true boundary. Their equations, <code>verify_sign</code> and <code>split_concat</code>, are theorems about these functions.</p>
+    <div class="cards"><div data-card="DY.Signature.verify_sign"></div><div data-card="DY.Concat.split_concat"></div></div>
+
+    <h3 id="meta">Why plain <code>=</code> is enough</h3>
+    <p>Using syntactic equality is only sound if normalising constructors really decide equality modulo the equations. <code>NormalizationMetaTheory.lean</code> proves this once, for first-order terms in general: if every constructor's normaliser is equivalent to the raw constructor and preserves normal forms, then two terms are equal modulo the equations exactly when their normal forms are syntactically equal. It is imported only so its proofs are checked; it is not instantiated to <code>Bytes</code> in the code.</p>
+    <pre class="lean-static">theorem final_theorem : t1 ≈(E) t2 ↔ myN normMk t1 = myN normMk t2</pre>
+    <div class="cards"><div data-card="_private.DY.Bytes.NormalizationMetaTheory.0.DY.Bytes.NormalizationMetaTheory.NormConstructorGood" data-label="NormConstructorGood"></div><div data-card="_private.DY.Bytes.NormalizationMetaTheory.0.DY.Bytes.NormalizationMetaTheory.final_theorem" data-label="final_theorem"></div></div>
+  </section>
+
+  <section id="anatomy">
+    <h2>4 · Anatomy of a primitive: Hash</h2>
+    <p><code>Hash.lean</code> is the smallest complete primitive. In file order, it defines:</p>
+    <div class="stepcard"><h4><span class="n">1</span>The API and the constructor</h4><pre class="lean-static">class CanHash (Bytes: Type u) where
+  hash: (msg: Bytes) → Bytes
+
+structure SubF (Bytes: Type) where
+  input: Bytes</pre><p>The functor's parameter is the recursive position: a hash has one child.</p></div>
+    <div class="stepcard"><h4><span class="n">2</span>Representation</h4><p><code>FunctorSizeOf</code> for well-founded recursion, <code>Representable</code> describing the constructor as "no data, one child" with conversions and their proofs, then derived <code>DecidableEq</code> and <code>Ord</code>. This is boilerplate every constructor writes.</p></div>
+    <div class="stepcard"><h4><span class="n">3</span>Length, and joining <code>Bytes</code></h4><pre class="lean-static">def SubF.length : Bytes.PartialLength SubF := fun _ _ => hashLength
+#combine into BytesFunctor, BytesLength from Hash,</pre></div>
+    <div class="stepcard"><h4><span class="n">4</span>The smart constructor and its laws</h4><pre class="lean-static">instance : CanHash Bytes where
+  hash input := ({input}: Hash.SubF Bytes).pack
+theorem hash_inj : hash x = hash y → x = y</pre></div>
+    <div class="stepcard hot"><h4><span class="n">5</span>The attacker rule</h4><pre class="lean-static">def hash.attackerKnowledge : SubAttackerKnowledge SubF where
+  pred p out := ∃ inp, out = hash inp ∧ p inp           -- the attacker can hash anything it knows</pre></div>
+    <div class="stepcard hot"><h4><span class="n">6</span>The invariants</h4><pre class="lean-static">def Hash.invariants : Bytes.PartialInvariants Hash.SubF where
+  well_formed := fun {input} rec tr => (rec input) tr
+  usage       := fun _ _ _ => Usage.nothing
+  label       := fun {input} rec tr => (rec input) tr     -- a hash has its input's label
+  invariant   := fun {input} rec tr => (rec input) tr     -- valid iff its input is
+theorem Hash.invariantsProofs : Bytes.PartialInvariantsProofs Hash.invariants where  -- all fields by default tactics
+#combine into BytesInvariants, BytesInvariantsProofs from Hash,</pre></div>
+    <div class="stepcard"><h4><span class="n">7</span>The pure Hoare triple</h4><pre class="lean-static">instance : HoareTriplePure (hash b) (fun tr => b.Invariant tr) (fun res tr => res.Invariant tr ∧ res.label tr = b.label tr)</pre><p>This is what <code>step</code> uses when a protocol writes <code>let k := hash …</code>.</p></div>
+    <div class="stepcard hot"><h4><span class="n">8</span>The closure proof</h4><pre class="lean-static">instance : SubAttackerKnowledgeTheorem hash.attackerKnowledge where
+  pf := …   -- if the input is publishable, so is its hash</pre><p>This is the primitive's contribution to <code>AttackerKnows_implies_Publishable</code>.</p></div>
+    <div class="cards"><div data-card="DY.Hash.CanHash"></div><div data-card="DY.Hash.Hash.SubF"></div><div data-card="DY.Hash.hash.attackerKnowledge"></div><div data-card="DY.Hash.Hash.invariants"></div><div data-card="DY.Bytes.PartialInvariants"></div></div>
+  </section>
+
+  <section id="attacker">
+    <h2>5 · Attacker rules</h2>
+    <p>The attacker's knowledge is the least set containing its base knowledge (messages on the wire, compromised states) and closed under every primitive's rules. Each primitive says which outputs the attacker can compute from inputs it knows:</p>
+    <table class="mech">
+      <thead><tr><th>primitive</th><th>the attacker can compute</th></tr></thead>
+      <tbody>
+        <tr><td>Literal</td><td>any literal, with no premise</td></tr>
+        <tr><td>Concat</td><td>a concat of known parts; either half of a known concat, via <code>split</code></td></tr>
+        <tr><td>Hash</td><td>the hash of anything known</td></tr>
+        <tr><td>DiffieHellman</td><td><code>dhPk</code> of a known secret; <code>dh</code> of a known public key and a known secret</td></tr>
+        <tr><td>Signature</td><td><code>vk</code> of a known key; a signature with a known key, nonce and message. No rule extracts the message from a signature</td></tr>
+        <tr><td>KDFs</td><td>an extract or expand of known inputs, any length</td></tr>
+        <tr><td>Random</td><td>nothing: random bytes cannot be guessed, only learned from messages</td></tr>
+      </tbody>
+    </table>
+    <p>The closure theorem for each rule says: if the inputs are publishable, so is the output. Combining them, least-fixpoint induction gives the key theorem: everything the attacker knows is publishable. The rules and their proofs must agree, which is why both live in the same file.</p>
+    <pre class="lean-static">class SubAttackerKnowledgeTheorem (att: SubAttackerKnowledge SubF) where
+  pf: ∀ b tr, tr.Invariant → att.pred (·.Publishable tr) b → b.Publishable tr</pre>
+    <div class="cards"><div data-card="DY.Bytes.AttackerKnows"></div><div data-card="DY.SubAttackerKnowledgeTheorem"></div><div data-card="DY.Bytes.AttackerKnows_implies_Publishable"></div><div data-card="DY.DiffieHellman.dh.attackerKnowledge"></div></div>
+  </section>
+
+  <section id="invariants">
+    <h2>6 · Invariants: where the security assumption lives</h2>
+    <p>A primitive's invariant says which terms honest code may build, and its label rule says how secret the result is. Together they are the security assumption. The signature invariant, quoted with its comments, shows this best:</p>
+    <pre class="lean-static">invariant := fun {sk, nonce, msg} rec tr =>
+  rec sk ∧ rec nonce ∧ rec msg ∧ (
+    ( exists sk_usg,
+      -- Honest case:
+      -- - the key has the usage of signature key
+      sk.HasUsage sk_usg tr ∧ sk_usg.type = "SigKey" ∧
+      -- - the custom (protocol-specific) invariant hold (authentication)
+      SignPred.pred sk_usg (vk sk) msg tr ∧
+      -- - the nonce is more secret than the signature key
+      (sk.label tr).canFlow (nonce.label tr) tr.erase ∧ …
+    ) ∨ (
+      -- Attacker case: the attacker knows the signature key.
+      -- The message is not required to be known by the attacker:
+      -- the EUF-CMA security assumption on signatures doesn't guarantee that in case of signature forgeries.
+      (sk.label tr).canFlow Label.pub tr.erase
+    ))</pre>
+    <p>A signature is a valid term if either the protocol's signing predicate held when it was made, or the key was already public. Unforgeability is exactly this disjunction, and <code>verify</code>'s triple hands it back to the verifier. SignedDH's signing predicate is what makes the client's event invariant possible.</p>
+    <div class="cards"><div data-card="DY.Signature.SignPred"></div><div data-card="DY.Example.SignedDH.SignedDHSignPred"></div></div>
+
+    <h3 id="broken">Choosing a weaker assumption</h3>
+    <p>The à-la-carte module states as a design goal that users choose their security assumptions, for example an attacker who later gets a quantum computer and can take discrete logarithms. SignedDHKEM does exactly that with its own copies of the primitives, <code>DiffieHellman'</code>, <code>Signature'</code> and <code>KEM</code>, each with a <code>Broken</code> part:</p>
+    <ul>
+      <li>a new attacker step, <code>breakDhPk</code>, that logs a "broken" event for a public key and then publishes the secret behind it. It is a trace action, not an attacker rule;</li>
+      <li>a label <code>Broken.label pk</code>, corrupt once that event is logged;</li>
+      <li>a strengthened invariant: every honest DH secret's label must flow to <code>Broken.label (dhPk sk)</code>, so breaking the key is allowed to leak it.</li>
+    </ul>
+    <p>The protocol's theorem then states its guarantee under the weaker assumption: a hybrid key stays secret unless <em>both</em> the DH part and the KEM part are compromised or broken.</p>
+    <div class="cards"><div data-card="DY.DiffieHellman'.Broken.breakDhPk"></div><div data-card="DY.DiffieHellman'.DhPk.invariants"></div></div>
+  </section>
+
+  <section id="random">
+    <h2>7 · Random bytes are a trace action</h2>
+    <pre class="lean-static">structure Random (Bytes: Type) where
+  timestamp: Nat
+  size: Nat
+
+def genRand (size: Nat) : Traceful Bytes := do
+  let time ← appendEntry ({ length := size }: ExecEntryT)
+  return makeRand time size</pre>
+    <p>A random value is the term "the bytes generated at index <code>timestamp</code>". That gives freshness for free, since distinct calls have distinct timestamps. Its label and usage live in the proof-trace entry at that index, chosen by the step's spec, and its invariant requires that entry to exist. The attacker learns nothing from the entry and has no rule to produce randoms.</p>
+    <div class="cards"><div data-card="DY.Random.genRand"></div><div data-card="DY.Random.Random.invariants"></div></div>
+  </section>
+
+  <section id="formats">
+    <h2>8 · Messages: literals and concat</h2>
+    <p><code>Literal</code> and <code>Concat</code> make <code>Bytes</code> a <code>Comparse.BytesLike</code>, the interface of the Comparse message-format library: <code>concat</code> and <code>split</code> become its concatenation and splitting, literals its byte arrays. Every structured message is then <code>serialize</code>d into length-prefixed concats and <code>parse</code>d back, with <code>parse_serialize_inv</code> as the round-trip law. On the trace page, Bob's message decodes to a 32-byte length prefix, <code>yPk</code>, and <code>sig</code>. Comparse also lifts invariants and publishability through formats, which is how <code>(serialize {yPk, sig}).Publishable</code> reduces to facts about the fields.</p>
+    <div class="cards"><div data-card="DY.Comparse.instBytesLikeBytes"></div></div>
+  </section>
+
+  <section id="new">
+    <h2>9 · Adding a primitive</h2>
+    <p>SignedDHKEM's <code>KEM.lean</code> is a complete user-defined primitive. The recipe it follows:</p>
+    <ol>
+      <li>An API class: <code>kemPk</code>, <code>kemEncap pk entropy</code> returning a ciphertext and a shared secret, <code>kemDecap sk cipher</code>.</li>
+      <li>One functor per constructor, here <code>Pk</code>, <code>Encap</code> and <code>SharedSecret</code>, each with representation boilerplate and a length, combined into the primitive's <code>SubF</code>.</li>
+      <li>The API on <code>Bytes</code> via <code>pack</code> and <code>view?</code>, and the equation as a theorem: <code>kemDecap sk (encap (kemPk sk) e).cipher = some (encap …).ss</code>.</li>
+      <li>Attacker rules and their packaged lemmas.</li>
+      <li>Invariants and label rules: the ciphertext is public, the shared secret has the entropy's label, and the entropy must be as secret as the recipient's key.</li>
+      <li>Pure Hoare triples for each operation, and the closure proofs.</li>
+      <li>Then list it in the protocol's <code>#combine</code> commands, next to the core primitives.</li>
+    </ol>
+    <pre class="lean-static">#combine +toplevel into BytesFunctor, BytesLength, attackerKnowledge from
+  Random, Literal, Concat, Hash, Signature', DiffieHellman', KEM,</pre>
+    <p>Nothing in DyLean's core changes. That is the point of the construction: a primitive is a file, and a protocol picks its files.</p>
+    <div class="cards"><div data-card="DY.KEM.CanKem"></div><div data-card="DY.KEM.kemDecap_kemEncap"></div></div>
+  </section>
+</article>
+</div>
+<footer>The prose is editorial; the cards are the compiler's view of <code>../dylean</code>.</footer>
+<template id="card-template">
+  <article class="card">
+    <header class="card-head">
+      <button class="card-toggle" aria-expanded="false" aria-label="Toggle source">▸</button>
+      <div class="card-title"><code class="card-name"></code><span class="kind"></span><span class="role"></span></div>
+      <div class="card-links"><a class="src-link" target="_blank" rel="noopener">source</a><a class="proof-link" href="#" hidden>proof tree</a><button class="card-close" aria-label="Close" hidden>×</button></div>
+    </header>
+    <div class="card-notes"></div>
+    <div class="card-body" hidden><pre class="lean"></pre><div class="nested"></div></div>
+  </article>
+</template>
+</body></html>
