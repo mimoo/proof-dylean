@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101923"><title>DyLean · Traces and Traceful</title><link rel="icon" href="data:,">
+<meta name="description" content="DyLean's trace type, typed entries, the execution trace and the proof trace that wraps it, erasure, the trace invariant, and the Traceful monad protocol steps are written in.">
+<link rel="stylesheet" href="explainer.css"><link rel="stylesheet" href="cards.css">
+<style>
+.lanes{border:1px solid var(--border);border-radius:12px;background:var(--panel);margin:18px 0;overflow:hidden}
+.lanes-head{padding:10px 14px;border-bottom:1px solid var(--border);font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center}
+.lanes-head b{color:var(--text)}
+.lanes-scroll{overflow-x:auto;padding:12px 14px 8px}
+.lane{display:grid;grid-template-columns:110px repeat(15,minmax(64px,1fr));gap:6px;align-items:stretch;min-width:1150px}
+.lane+.lane{margin-top:6px}
+.lane .name{font:600 11px var(--mono);color:var(--muted);align-self:center;letter-spacing:.04em}
+.lane.exec .name{color:var(--blue)}.lane.proof .name{color:var(--warm)}
+.ent{border:1px solid var(--border);border-radius:8px;background:var(--bg);padding:6px 6px;font:11px/1.35 var(--mono);color:var(--text);cursor:pointer;min-height:56px;display:flex;flex-direction:column;gap:2px;overflow-wrap:anywhere}
+.ent .ix{color:var(--muted);font-size:10px}
+.ent.k-message{border-color:#3f5e80}.ent.k-random{border-color:#5b4a7a}.ent.k-event{border-color:#2f5a52}.ent.k-store,.ent.k-storeGlobal{border-color:#5b4d35}
+.ent .gh{color:var(--warm);font-size:10px}
+.ent.sel{outline:2px solid var(--accent);outline-offset:1px}
+.erase-row{display:grid;grid-template-columns:110px repeat(15,minmax(64px,1fr));gap:6px;min-width:1150px;font:11px var(--mono);color:#5f7388;text-align:center}
+.erase-row span:first-child{text-align:left}
+.lanes-detail{border-top:1px solid var(--border);padding:12px 14px;background:#0e1620;font-size:13.5px;line-height:1.6;min-height:70px}
+.lanes-detail code{font-size:12.5px}
+.lanes-detail b{color:var(--accent)}
+.desugar{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+@media(max-width:820px){.desugar{grid-template-columns:1fr}}
+</style>
+<script defer src="toolkit-data.js"></script><script defer src="trace/trace-data.js"></script><script defer src="cards.js"></script><script defer src="explainer.js"></script></head>
+<body>
+<header><a class="brand" href="index.html"><b>δ</b> DyLean <span>/ traces and Traceful</span></a><nav class="header-links"><a href="trace.html">A real trace</a><a href="hoare.html">Hoare triples</a><a href="attacker.html">Attacker knowledge</a><a href="source.html" target="_blank" rel="noopener">Source browser ↗</a></nav></header>
+
+<div class="layout">
+<nav class="toc" aria-label="Contents">
+  <p class="eyebrow">CONTENTS</p>
+  <a href="#trace">1 · A trace is a snoc-list</a>
+  <a href="#order" class="sub">The prefix order</a>
+  <a href="#lookup" class="sub">Indices are timestamps</a>
+  <a href="#typed">2 · Typed entries in one trace</a>
+  <a href="#exec">3 · The execution trace</a>
+  <a href="#proof">4 · The proof trace wraps it</a>
+  <a href="#realrun" class="sub">Both, for a real run</a>
+  <a href="#inv">5 · The trace invariant</a>
+  <a href="#traceful">6 · Traceful: the monad</a>
+  <a href="#prims" class="sub">The three primitives</a>
+  <a href="#desugar" class="sub">A step, desugared</a>
+  <a href="#err" class="sub">Pure failures: Err</a>
+  <a href="#reach">7 · Reachability</a>
+  <a href="#has">8 · Writing against abstract types</a>
+</nav>
+
+<article>
+  <p class="eyebrow">FOUNDATIONS</p>
+  <h1>Traces and <code>Traceful</code></h1>
+  <p class="lede">Everything in DyLean happens on a <b>trace</b>: an append-only log of what the protocol and the attacker did. Programs run on the <b>execution trace</b>, the log as it really is. Proofs reason about the <b>proof trace</b>, the same log with ghost annotations on some entries, which erases back to the execution trace. Protocol steps are written in <b><code>Traceful</code></b>, a small state-and-failure monad over the execution trace whose type guarantees the log only grows. This page goes through each layer, from <code>Trace</code> up to reachability.</p>
+
+  <section id="trace">
+    <h2>1 · A trace is a snoc-list</h2>
+    <pre class="lean-static">inductive Trace (α: Type) where
+  | nil: Trace α
+  | snoc: Trace α -> α -> Trace α</pre>
+    <p>A trace grows at the right: <code>.snoc tr e</code> is <code>tr</code> with <code>e</code> appended. It is generic in the entry type <code>α</code>; the execution trace and the proof trace are both instances.</p>
+
+    <h3 id="order">The prefix order</h3>
+    <pre class="lean-static">inductive Trace.le : Trace α -> Trace α -> Prop where
+  | equal:  (tr: Trace α) -> Trace.le tr tr
+  | extend: (tr1 tr2: Trace α) -> (e: α) -> Trace.le tr1 tr2 -> Trace.le tr1 (.snoc tr2 e)</pre>
+    <p><code>tr1 ≤ tr2</code> means <code>tr1</code> is a prefix of <code>tr2</code>. It is reflexive and transitive, and almost every theorem in DyLean is stated "for every later trace" using it: labels' corruption is monotone, invariants carry <code>_later</code> lemmas, <code>canFlow</code> quantifies over extensions. <code>le_imp_prefix_eq</code> recovers a prefix from a longer trace: <code>tr1 ≤ tr2 → tr2.prefix tr1.length = tr1</code>.</p>
+    <div class="cards"><div data-card="DY.Trace.le"></div><div data-card="DY.Trace.prefix"></div><div data-card="DY.Trace.le_imp_prefix_eq"></div></div>
+
+    <h3 id="lookup">Indices are timestamps</h3>
+    <pre class="lean-static">def Trace.at (tr: Trace α) (i: Nat) (h_i: i < tr.length) : α := …
+theorem Trace.at_le : tr1 ≤ tr2 → tr1.at i h_i = tr2.at i _      -- entries never move</pre>
+    <p>Entry <code>i</code> is the one appended when the trace had length <code>i</code>, so an index is a timestamp. Because extension never changes existing entries, an index is a stable name for an entry: random bytes are named by the index they were generated at, stored states by their handle, events by the time they were logged.</p>
+    <div class="cards"><div data-card="DY.Trace.at"></div><div data-card="DY.Trace.at_le"></div></div>
+  </section>
+
+  <section id="typed">
+    <h2>2 · Typed entries in one trace</h2>
+    <p>A trace holds messages, random-byte records, events, stored states and more, each with its own type, but a <code>Trace</code> has a single entry type. One class connects them:</p>
+    <pre class="lean-static">class TraceEntryHas (EntryT: Type) (α: Type) where
+  inj: EntryT → α
+  proj: α → Option EntryT
+  inj_proj_eq: ∀ x y, (proj x = some y) = (x = inj y)
+
+def Trace.append [TraceEntryHas EntryT α] (tr: Trace α) (entry: EntryT) := .snoc tr (TraceEntryHas.inj entry)
+def Trace.at? [TraceEntryHas EntryT α] (tr: Trace α) (i: Nat) : Option EntryT :=
+  if h_i: i < tr.length then TraceEntryHas.proj (tr.at i h_i) else none</pre>
+    <p>Appending injects a local entry into the global type. Looking up at a local type projects, and returns <code>none</code> if the index is out of range <em>or</em> holds an entry of another type. That second case is why reading a stored state at a wrong handle fails instead of returning garbage.</p>
+    <div class="cards"><div data-card="DY.TraceEntryHas"></div><div data-card="DY.Trace.at?"></div></div>
+  </section>
+
+  <section id="exec">
+    <h2>3 · The execution trace</h2>
+    <pre class="lean-static">class ExecTraceTypes where
+  ExecT: Type
+def ExecTrace.Entry [ExecTraceTypes] := ExecTraceTypes.ExecT
+abbrev ExecTrace [ExecTraceTypes] := Trace ExecTrace.Entry
+
+class ExecTraceTypes.Has (ExecEntryT: Type) extends TraceEntryHas ExecEntryT ExecTrace.Entry</pre>
+    <p>The global entry type is a parameter: a protocol builds it with <code>#combine</code> as a tagged sum of the entry types it uses, and declares it as <em>the</em> execution entry type. Each action declares its own small entry type, for example <code>Network.ExecEntryT := {msg}</code> and <code>Random.ExecEntryT := {length}</code>, and asks for <code>ExecTraceTypes.Has</code> of it. That instance is found by chaining single inclusion steps up to the global sum, as the <a href="combine.html#has">#combine page</a> explains.</p>
+    <div class="cards"><div data-card="DY.ExecTraceTypes"></div><div data-card="DY.ExecTraceTypes.combine"></div><div data-card="DY.Network.ExecEntryT"></div></div>
+  </section>
+
+  <section id="proof">
+    <h2>4 · The proof trace wraps it</h2>
+    <p>Some facts proofs need are not in the execution at all. When <code>genRand</code> runs, the program only records a length, but the proof needs to know which label those bytes have. So each entry kind also has a <b>proof entry type</b> with any ghost fields, and an erasure back to the execution entry:</p>
+    <pre class="lean-static">class ErasableProofEntry (ExecEntryT: outParam Type) (ProofEntryT: Type) where
+  erase: ProofEntryT → ExecEntryT
+
+structure Random.ExecEntryT  where length: Nat
+structure Random.ProofEntryT where length: Nat; label: Label; usage: Usage
+instance : ErasableProofEntry Random.ExecEntryT Random.ProofEntryT where
+  erase | {length, label := _, usage := _} => { length }
+
+abbrev Network.ProofEntryT := Network.ExecEntryT     -- no ghost data
+instance : ErasableProofEntry … := ErasableProofEntry.default Network.ExecEntryT   -- erase is the identity</pre>
+    <p>The proof trace is then a separate <code>Trace</code> over the combined proof entry type, and it erases entry by entry:</p>
+    <pre class="lean-static">class ProofTraceTypes [ExecTraceTypes] where
+  ProofT: Type
+  [tc: ErasableProofEntry ExecTraceTypes.ExecT ProofT]
+abbrev ProofTrace := Trace ProofTrace.Entry
+
+def Trace.erase (tr: ProofTrace) : ExecTrace :=
+  match tr with
+  | .nil => .nil
+  | .snoc trBefore entry => .snoc trBefore.erase entry.erase</pre>
+    <p>So a proof trace has the same length as its erasure, entry <code>i</code> erases to execution entry <code>i</code>, and prefixes commute with erasure. "Wraps" means exactly that: a proof trace is an annotation of an execution trace, index for index. Only a few entry kinds carry ghost data; in SignedDH it is the random-bytes records.</p>
+    <table class="mech">
+      <thead><tr><th>lemma</th><th>statement</th></tr></thead>
+      <tbody>
+        <tr><td><code>erase_length</code></td><td><code>tr.erase.length = tr.length</code></td></tr>
+        <tr><td><code>erase_at</code></td><td><code>tr.erase.at i _ = (tr.at i _).erase</code></td></tr>
+        <tr><td><code>prefix_erase</code></td><td><code>(tr.prefix i).erase = tr.erase.prefix i</code></td></tr>
+        <tr><td><code>erase_le</code></td><td><code>tr1 ≤ tr2 → tr1.erase ≤ tr2.erase</code></td></tr>
+      </tbody>
+    </table>
+    <div class="cards"><div data-card="DY.ErasableProofEntry"></div><div data-card="DY.ProofTraceTypes"></div><div data-card="DY.Trace.erase"></div><div data-card="DY.Random.ProofEntryT"></div></div>
+
+    <h3 id="realrun">Both, for a real run</h3>
+    <p>These are the 15 entries of the honest SignedDH run from the <a href="trace.html">trace page</a>, executed in Lean. The top row is the execution trace; the bottom row is a proof trace that erases to it. Click an entry to compare.</p>
+    <div class="lanes" id="lanes-box">
+      <div class="lanes-head"><b>honestAttacker</b><span>execution entries from the Lean run · ghost fields from the step specs</span></div>
+      <div class="lanes-scroll" id="lanes"></div>
+      <div class="lanes-detail" id="lanes-detail">Click an entry.</div>
+    </div>
+  </section>
+
+  <section id="inv">
+    <h2>5 · The trace invariant</h2>
+    <pre class="lean-static">class SubTraceInvariant (ProofEntryT: Type) [ErasableProofEntry ExecEntryT ProofEntryT] where
+  invariant: ProofTrace → ProofEntryT → Prop
+
+def Trace.Invariant (tr: ProofTrace) : Prop :=
+  match tr with
+  | .nil => True
+  | .snoc trBefore entry => trBefore.Invariant ∧ entry.Invariant trBefore</pre>
+    <p>Each entry kind says what must hold of the proof trace before it for it to be appended: messages must be publishable, events must satisfy their event invariant, random entries have no condition. The trace invariant is the conjunction over all entries, each judged against its own prefix. It is defined on the <em>proof</em> trace, because the conditions talk about ghost data such as labels. Two lemmas do most of the work:</p>
+    <pre class="lean-static">theorem Trace.invariant_append : (tr.append entry).Invariant = (tr.Invariant ∧ SubTraceInvariant.invariant tr entry)
+theorem Trace.invariant_at : tr.Invariant → (tr.at i h_i).Invariant (tr.prefix i)</pre>
+    <p>The first is how writing is checked; the second is how reading recovers what was checked. The <a href="hoare.html">Hoare triple page</a> builds on both.</p>
+    <div class="cards"><div data-card="DY.Trace.Invariant"></div><div data-card="DY.Trace.invariant_at"></div></div>
+  </section>
+
+  <section id="traceful">
+    <h2>6 · <code>Traceful</code>: the monad</h2>
+    <pre class="lean-static">def Traceful (a: Type) := (trIn: ExecTrace) → Option a × { trOut: ExecTrace // trIn ≤ trOut }</pre>
+    <p>A <code>Traceful a</code> takes the current execution trace and returns an optional result and a new trace, together with a proof that the new trace extends the old one. It is a state monad over the trace, with failure, and the subtype makes "the trace only grows" a property of every program rather than something to prove later.</p>
+    <pre class="lean-static">instance : Monad Traceful where
+  pure x := fun tr => (some x, ⟨ tr, by grind ⟩)
+  bind x f := fun tr =>
+    let (xOptVal, trMid) := x tr
+    match xOptVal with
+    | none => (none, trMid)                              -- failure stops, keeping what was appended
+    | some xVal =>
+      let (optRes, trOut) := f xVal trMid.val
+      (optRes, ⟨ trOut.val, by grind [Trace.le_trans] ⟩)
+
+instance : Alternative Traceful where
+  failure := fun tr => (none, ⟨ tr, by grind ⟩)          -- so guard works</pre>
+    <div class="callout"><b>Failure does not roll back.</b> If a step appends two entries and then fails, the trace keeps those two entries. That is why the Hoare triples demand the invariant even on failure: whatever was appended before the failure must have been allowed.</div>
+    <div class="callout"><b>Programs never see the proof trace.</b> <code>Traceful</code> is over <code>ExecTrace</code>. The proof trace exists only in specifications: <code>wp</code> runs the program on <code>tr.erase</code> and asks for a proof trace that erases to the result.</div>
+    <div class="cards"><div data-card="DY.Traceful"></div><div data-card="DY.instMonadTraceful"></div><div data-card="DY.instAlternativeTraceful"></div></div>
+
+    <h3 id="prims">The three primitives</h3>
+    <pre class="lean-static">def appendEntry [ExecTraceTypes.Has EntryT] (entry: EntryT) : Traceful Nat :=
+  Traceful.mk (fun tr => (some tr.length, ⟨ tr.append entry, by simp [Trace.append_le] ⟩ ))   -- returns the new index
+def getEntry [ExecTraceTypes.Has EntryT] (timestamp: Nat) : Traceful EntryT :=
+  Traceful.mk (fun tr => (tr.at? timestamp, ⟨ tr, by grind ⟩ ))                               -- typed lookup, may fail
+def getTimestamp : Traceful Nat :=
+  Traceful.mk (fun tr => (some tr.length, ⟨ tr, by grind ⟩))</pre>
+    <p>Every action in the library is built from these. <code>genRand</code> appends a length record and returns the term "random bytes at that index". <code>sendMessage</code>, <code>logEvent</code> and <code>storeGlobalState</code> append their entries and return the index, which is the handle. <code>receiveMessage</code> and <code>getGlobalState</code> are <code>getEntry</code> at their type.</p>
+    <div class="cards"><div data-card="DY.appendEntry"></div><div data-card="DY.getEntry"></div><div data-card="DY.Random.genRand"></div></div>
+
+    <h3 id="desugar">A step, desugared</h3>
+    <div class="desugar">
+      <pre class="lean-static">def Client.initiate (me) : Traceful (Nat × Nat) := do
+  let xSk ← Random.genRand 32
+  let xPk := DiffieHellman.dhPk xSk
+  ProtocolEvent.logEvent (ClientInitiateEvent me xPk)
+  let stHandle ← storeLocalState me { xPk, xSk }
+  let msgHandle ← sendMessage (serialize { xPk })
+  return (stHandle, msgHandle)</pre>
+      <pre class="lean-static">genRand 32 >>= fun xSk =>
+  let xPk := dhPk xSk
+  logEvent … >>= fun () =>
+  storeLocalState … >>= fun stHandle =>
+  sendMessage … >>= fun msgHandle =>
+  pure (stHandle, msgHandle)</pre>
+    </div>
+    <p>Run on a trace of length <code>n</code>, it appends four entries: a random record at <code>n</code>, so <code>xSk</code> is the term "random bytes at <code>n</code>"; the event at <code>n+1</code>; the state at <code>n+2</code>; the message at <code>n+3</code>. It returns <code>some (n+2, n+3)</code>. In the honest run, <code>n = 4</code>, which is why Alice's state has handle 6.</p>
+
+    <h3 id="err">Pure failures: <code>Err</code></h3>
+    <pre class="lean-static">def Err := OptionT Id   deriving Monad, Alternative
+instance : MonadLift Err Traceful := { monadLift x := Traceful.mk fun tr => (x, ⟨ tr, by grind ⟩ ) }</pre>
+    <p>Parsing can fail but does not touch the trace, so <code>Comparse.parse</code> returns <code>Err a</code>, and Lean inserts the lift automatically in <code>let msg ← parse msgBytes</code>. The lifted computation leaves the trace unchanged and fails the step if parsing fails.</p>
+    <div class="cards"><div data-card="DY.Err"></div><div data-card="DY.instMonadLiftErrTraceful"></div></div>
+  </section>
+
+  <section id="reach">
+    <h2>7 · Reachability: which traces can happen</h2>
+    <pre class="lean-static">structure ReachabilityConfig where
+  Input: Type
+  PreCond: Input → ExecTrace → Prop
+  step: Input → (Output: Type) × Traceful Output
+
+inductive Trace.Reachable (config: ReachabilityConfig) : ExecTrace → Prop where
+  | Base: Trace.Reachable config Trace.nil
+  | Step: (input: config.Input) → config.PreCond input tr → Trace.Reachable config tr →
+          Trace.Reachable config (((config.step input).snd).run tr).snd</pre>
+    <p>A reachable trace is anything built from the empty trace by running allowed steps, with arguments chosen freely, which is how the attacker controls scheduling. Reachability is about execution traces only; <code>Reachable_implies_Invariant</code> is the theorem that puts an invariant proof trace behind each one.</p>
+    <p>For a concrete program such as the sanity-check runs, <code>PreservesReachability</code> is the execution-side counterpart of a Hoare triple. Its lemmas for bind, pure and registered steps let <code>honestAttacker_PreservesReachability</code> show that the honest run's trace is reachable, step by step.</p>
+    <div class="cards"><div data-card="DY.Trace.Reachable"></div><div data-card="DY.Traceful.PreservesReachability"></div><div data-card="DY.Traceful.PreservesReachabilityFrom_bind"></div><div data-card="_private.Examples.SignedDH.SanityChecks.0.DY.Example.SignedDH.honestAttacker_PreservesReachability" data-label="honestAttacker_PreservesReachability"></div></div>
+  </section>
+
+  <section id="has">
+    <h2>8 · Writing against abstract trace types</h2>
+    <p>SignedDH's specification and proofs never mention the concrete combined entry types. They are written against bundle classes that only promise "some global trace type containing these entry kinds":</p>
+    <table class="mech">
+      <thead><tr><th>class</th><th>bundles</th></tr></thead>
+      <tbody>
+        <tr><td><code>HasExecTrace</code></td><td><code>ExecTraceTypes</code>, a <code>Has</code> for each of the seven entry kinds, and base attacker knowledge</td></tr>
+        <tr><td><code>HasProofTrace</code></td><td><code>ProofTraceTypes</code> and a <code>Has</code> for each proof entry kind</td></tr>
+        <tr><td><code>HasTraceInvariant</code></td><td><code>TraceInvariant</code>, a <code>Has</code> per kind, and the attacker-knowledge theorems</td></tr>
+      </tbody>
+    </table>
+    <p><code>Instance.lean</code> builds the concrete types with <code>#combine +toplevel</code> and then discharges each class with an empty instance. The proofs therefore depend only on injection and projection, never on the shape of the sum.</p>
+    <div class="cards"><div data-card="DY.Example.SignedDH.HasExecTrace"></div><div data-card="DY.Example.SignedDH.HasProofTrace"></div></div>
+  </section>
+</article>
+</div>
+<footer>The prose is editorial; the cards are the compiler's view of <code>../dylean</code>; the two-lane diagram uses the exported run.</footer>
+<template id="card-template">
+  <article class="card">
+    <header class="card-head">
+      <button class="card-toggle" aria-expanded="false" aria-label="Toggle source">▸</button>
+      <div class="card-title"><code class="card-name"></code><span class="kind"></span><span class="role"></span></div>
+      <div class="card-links"><a class="src-link" target="_blank" rel="noopener">source</a><a class="proof-link" href="#" hidden>proof tree</a><button class="card-close" aria-label="Close" hidden>×</button></div>
+    </header>
+    <div class="card-notes"></div>
+    <div class="card-body" hidden><pre class="lean"></pre><div class="nested"></div></div>
+  </article>
+</template>
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+  const D=window.DYLEAN_TRACE, host=document.getElementById('lanes'); if(!D||!host) return;
+  const run=D.scenarios.find(s=>s.name==='honestAttacker'), ann=D.annotations.scenarios.honestAttacker.entries, names=D.annotations.names;
+  const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const key=b=>b.t==='random'?'random@'+b.timestamp:b.t==='dhPk'?'dhPk('+key(b.sk)+')':b.t==='vk'?'vk('+key(b.sk)+')':b.t==='hash'?'hash('+key(b.input)+')':b.t==='dh'?'dh('+key(b.pk)+','+key(b.sk)+')':b.t;
+  const nm=b=>{ const n=names[key(b)]; return n?n.name:(b.t==='concat'?'(serialised)':b.t); };
+  const shortExec=e=>{ const d=e.data; switch(e.kind){
+    case 'random': return 'Random {length := '+d.length+'}';
+    case 'message': return 'msg '+nm(d.msg);
+    case 'event': return d.event.replace('Event','');
+    case 'store': return 'store '+d.stateType.replace(' "SignedDH PKI"','');
+    case 'storeGlobal': return 'storeG '+d.stateType.replace(' "SignedDH PKI"','');
+    default: return e.kind; } };
+  const row=(cls,label,cells)=>`<div class="lane ${cls}"><span class="name">${label}</span>${cells.join('')}</div>`;
+  const execCells=run.entries.map(e=>`<div class="ent k-${e.kind}" data-i="${e.i}"><span class="ix">#${e.i}</span>${esc(shortExec(e))}</div>`);
+  const proofCells=run.entries.map(e=>{ const g=ann[String(e.i)]&&ann[String(e.i)].ghost; return `<div class="ent k-${e.kind}" data-i="${e.i}"><span class="ix">#${e.i}</span>${esc(shortExec(e).replace('Random {length := 32}','Random {32, label, usage}'))}${g?`<span class="gh">label: ${esc(g.label.split(' ')[0])}…</span>`:''}</div>`; });
+  host.innerHTML=row('exec','ExecTrace',execCells)+`<div class="erase-row"><span>↑ erase</span>${run.entries.map(e=>`<span>${ann[String(e.i)]&&ann[String(e.i)].ghost?'drops label, usage':'='}</span>`).join('')}</div>`+row('proof','ProofTrace',proofCells);
+  const detail=document.getElementById('lanes-detail');
+  host.addEventListener('click',ev=>{ const c=ev.target.closest('.ent'); if(!c) return; const i=+c.dataset.i, e=run.entries[i], a=ann[String(i)]||{};
+    host.querySelectorAll('.ent').forEach(x=>x.classList.toggle('sel',+x.dataset.i===i));
+    const g=a.ghost;
+    detail.innerHTML=`<b>Entry ${i}</b> · ${esc(e.kind)}. Execution entry: <code>${esc(shortExec(e))}</code>. `+(g?`Proof entry adds <code>label := ${esc(g.label)}</code> and <code>usage := ${esc(g.usage)}</code>, chosen by the step's spec; <code>erase</code> drops them. `:`Proof entry is the execution entry itself; <code>erase</code> is the identity. `)+(a.invariant?`Entry invariant, on the prefix of length ${i}: ${esc(a.invariant)}`:'');
+  });
+});
+</script>
+</body></html>

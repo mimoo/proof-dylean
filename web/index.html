@@ -32,7 +32,8 @@ h1{font-size:clamp(30px,4.6vw,44px);line-height:1.1;letter-spacing:-.035em;margi
 .card:hover .go::after{content:" →"}
 .card .go::after{content:" →";opacity:.6}
 .concepts{margin-top:44px}.concepts h2{font-size:22px;letter-spacing:-.02em;margin:0 0 6px}.concepts-lede{color:var(--muted);font-size:15px;margin:0 0 16px;max-width:70ch}
-.concept-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.concept-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media(max-width:1100px){.concept-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .concept-grid a{display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:12px;background:var(--panel);color:var(--text)}
 .concept-grid a:hover{text-decoration:none;border-color:#396359;background:#15282a}
 .concept-grid b{font-size:15.5px}.concept-grid span{color:var(--muted);font-size:13.5px;line-height:1.5}
@@ -88,10 +89,12 @@ footer{padding:18px 24px;border-top:1px solid var(--border);color:var(--muted);f
     <p class="concepts-lede">Background for reading any DyLean proof. Each page explains one mechanism from its definitions, with the real source embedded and unfoldable.</p>
     <div class="concept-grid">
       <a href="trace.html"><b>A real trace</b><span>One honest run and one compromise, entry by entry: execution view, ghost data, Hoare triple and invariant.</span></a>
+      <a href="traces.html"><b>Traces and <code>Traceful</code></b><span>The trace type, how the proof trace wraps the execution trace, and the monad protocol steps are written in.</span></a>
       <a href="hoare.html"><b>Hoare triples and <code>wp</code></b><span>What a triple promises, what <code>WP.wp</code> means on a trace, ghost arguments, and how <code>step</code> chains them.</span></a>
       <a href="labels.html"><b>Labels</b><span>Labels as corruption predicates, <code>canFlow</code>, how bytes get labels, and how compromise makes them corrupt.</span></a>
       <a href="state.html"><b>Local and global state</b><span>Storing, reading and compromising state, handles, state invariants, and long-term keys built on top.</span></a>
-      <a href="equations.html"><b>Equational theories</b><span>How primitives are defined, how terms are normalised, attacker rules, per-primitive invariants, and adding your own.</span></a>
+      <a href="equations.html"><b>Equational theories</b><span>How primitives are defined, normalised and given invariants, with each primitive's Hoare triples side by side.</span></a>
+      <a href="attacker.html"><b>Attacker knowledge, a least fixpoint</b><span>What the attacker can know, why it is the least closed set, and the induction that makes everything it knows publishable.</span></a>
       <a href="combine.html"><b>How <code>#combine</code> works</b><span>The macro that assembles a protocol's pieces into the global types and instances, traced through its implementation.</span></a>
     </div>
   </section>

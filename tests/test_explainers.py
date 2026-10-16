@@ -7,7 +7,7 @@ import unittest
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 DIST = ROOT/'dist'
 T = json.loads((DIST/'toolkit-data.js').read_text().removeprefix('window.DYLEAN_TOOLKIT=').removesuffix(';\n'))
-PAGES = ['hoare.html', 'labels.html', 'state.html', 'equations.html']
+PAGES = ['hoare.html', 'labels.html', 'state.html', 'equations.html', 'attacker.html', 'traces.html']
 
 
 class ExplainerTests(unittest.TestCase):

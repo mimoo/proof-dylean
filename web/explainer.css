@@ -87,7 +87,7 @@ pre.lean-static .gen{color:var(--warm)}
 .invocation>summary .badge{font-size:11px;letter-spacing:.08em;color:var(--warm);border:1px solid #5b4d35;border-radius:4px;padding:1px 6px;text-transform:uppercase}
 .invocation .inv-body{padding:0 16px 14px;border-top:1px solid var(--border)}
 .invocation pre.lean-static{margin:12px 0}
-.inv-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+.inv-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}.inv-cols>div{min-width:0}
 .inv-cols h5{margin:12px 0 6px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .inv-cols ul{font-size:14px;color:var(--muted)}
 .inv-cols ul code{font-size:12.5px}

@@ -20,15 +20,22 @@
   <a href="#attacker">5 · Attacker rules</a>
   <a href="#invariants">6 · Invariants: the security assumption</a>
   <a href="#broken" class="sub">Choosing a weaker assumption</a>
-  <a href="#random">7 · Random bytes</a>
-  <a href="#formats">8 · Messages: literals and concat</a>
-  <a href="#new">9 · Adding a primitive</a>
+  <a href="#byprim">7 · Primitive by primitive</a>
+  <a href="#bp-hash" class="sub">Hash</a>
+  <a href="#bp-dh" class="sub">Diffie–Hellman</a>
+  <a href="#bp-sign" class="sub">Signatures</a>
+  <a href="#bp-small" class="sub">Concat, literals, KDFs</a>
+  <a href="#bp-random" class="sub">Random</a>
+  <a href="#bp-kem" class="sub">KEM</a>
+  <a href="#random">8 · Random bytes</a>
+  <a href="#formats">9 · Messages: literals and concat</a>
+  <a href="#new">10 · Adding a primitive</a>
 </nav>
 
 <article>
   <p class="eyebrow">CRYPTOGRAPHY</p>
   <h1>Equational theories</h1>
-  <p class="lede">In a Dolev–Yao model, cryptography is symbolic: a hash is the term <code>hash(x)</code>, not 32 bytes, and the only facts about it are the equations you state. DyLean builds <code>Bytes</code> as a <b>free term algebra assembled from modular primitives</b>, puts each equation <b>inside a smart constructor</b> so equal things are literally equal terms, and gives each primitive three more ingredients: what the attacker can compute with it, what invariant honest uses satisfy, and the proofs that tie the two together.</p>
+  <p class="lede">In a Dolev–Yao model, cryptography is symbolic: a hash is the term <code>hash(x)</code>, not 32 bytes, and the only facts about it are the equations you state. DyLean builds <code>Bytes</code> as a <b>free term algebra assembled from modular primitives</b>, puts each equation <b>inside a smart constructor</b> so equal things are literally equal terms, and gives each primitive three more ingredients: what the attacker can compute with it, what invariant honest uses satisfy, and the proofs that tie the two together. Section 7 sets each primitive's invariant beside the Hoare triples protocols use.</p>
 
   <section id="bytes">
     <h2>1 · Symbolic bytes</h2>
@@ -180,8 +187,129 @@ theorem Hash.invariantsProofs : Bytes.PartialInvariantsProofs Hash.invariants wh
     <div class="cards"><div data-card="DY.DiffieHellman'.Broken.breakDhPk"></div><div data-card="DY.DiffieHellman'.DhPk.invariants"></div></div>
   </section>
 
+  <section id="byprim">
+    <h2>7 · Primitive by primitive: invariants and Hoare triples</h2>
+    <p>Every primitive file follows the same three-layer pattern, so the triples a protocol proof uses are derived, not invented:</p>
+    <ol>
+      <li><b>An invariants record per constructor</b>, giving its well-formedness, usage, label and invariant in terms of its children (<code>rec x</code>).</li>
+      <li><b>Per-operation lemmas</b> such as <code>hash.label</code> and <code>dh.Invariant</code>, proved by unfolding the record with <code>Bytes.label.eq</code> and <code>Bytes.Invariant.eq</code>. They are equalities when the record only refers to children, and implications when it has side conditions.</li>
+      <li><b>Hoare triples</b> stated with those lemmas: <code>HoareTriplePure</code> for values, <code>HoareTriplePureGhost</code> when a value not determined by the inputs, such as a key's usage, has to be named, and a monadic triple for the few operations that run in <code>Traceful</code> or <code>Err</code>.</li>
+    </ol>
+    <p>When a protocol writes <code>let k := hash …</code>, the <code>step</code> tactic introduces the <code>let</code>, finds the operation's pure triple by typeclass search, proves its precondition with <code>grind</code> and adds its postcondition to the context. One lemma, <code>apply_hoare_triple_pure</code>, covers pure and ghost triples alike, because every pure triple counts as a ghost triple with ghost <code>()</code>. The <a href="hoare.html#pure">Hoare triple page</a> has the details.</p>
+    <div class="cards"><div data-card="DY.apply_hoare_triple_pure"></div><div data-card="DY.Bytes.label.eq"></div></div>
+
+    <h3 id="bp-hash">Hash: copy the input</h3>
+    <div class="inv-cols">
+      <div><h5>invariants record</h5><pre class="lean-static">well_formed := fun {input} rec tr => (rec input) tr
+usage       := fun _ _ _ => Usage.nothing
+label       := fun {input} rec tr => (rec input) tr
+invariant   := fun {input} rec tr => (rec input) tr</pre></div>
+      <div><h5>Hoare triple</h5><pre class="lean-static">HoareTriplePure (hash b)
+  (fun tr => b.Invariant tr)
+  (fun res tr => res.Invariant tr ∧ res.label tr = b.label tr)
+-- pf := by simp</pre></div>
+    </div>
+    <p>Label and invariant are the input's, so the triple needs the input valid and copies its label. The simp lemmas <code>hash.label</code> and <code>hash.Invariant</code> are equalities, and plain <code>simp</code> proves the triple.</p>
+    <div class="cards"><div data-card="DY.Hash.hash.label"></div><div data-card-at="DY/EquationalTheory/Hash.lean:198" data-label="hash's HoareTriplePure (hygienic name)"></div></div>
+
+    <h3 id="bp-dh">Diffie–Hellman: public keys are public, shared secrets join</h3>
+    <div class="inv-cols">
+      <div><h5>invariants records</h5><pre class="lean-static">-- DhPk
+label     := fun {sk} rec tr => Label.pub
+invariant := fun {sk} rec tr => (rec sk) tr
+-- Dh
+label     := fun {pk, sk} rec tr =>
+  match pk.view? DhPk.SubF with
+  | none => Label.pub
+  | some {sk := sk2} => Label.join ((rec sk) tr) ((rec sk2) tr)
+invariant := fun {pk, sk} rec tr => (rec pk) tr ∧ (rec sk) tr</pre></div>
+      <div><h5>Hoare triples</h5><pre class="lean-static">HoareTriplePure (dhPk sk)
+  (fun tr => sk.Invariant tr)
+  (fun res tr => res.Invariant tr ∧ res.label tr = Label.pub)
+
+HoareTriplePure (dh pk sk)
+  (fun tr => sk.Invariant tr ∧ pk.Publishable tr)
+  (fun res tr => res.Invariant tr ∧
+                 res.label tr = Label.join (sk.label tr) (pk.dhSkLabel tr))</pre></div>
+    </div>
+    <p>The shared secret's label joins the local secret's label with the label of the secret hidden in the public key, read back through <code>dhSkLabel</code>. The precondition asks for <code>pk.Publishable</code>, stronger than the <code>pk.Invariant</code> the record needs, because in protocols the peer's public key comes off the network. SignedDHKEM's copy, <code>DiffieHellman'</code>, adds one more precondition: the secret's label must flow to "this public key was broken".</p>
+    <div class="cards"><div data-card="DY.DiffieHellman.dh.label"></div><div data-card="DY.DiffieHellman.instHoareTriplePureBytesDhAndInvariantPublishableEqLabelLabelJoinDhSkLabel" data-label="dh's HoareTriplePure"></div><div data-card="DY.DiffieHellman.instHoareTriplePureBytesDhPkInvariantAndEqLabelLabelPub" data-label="dhPk's HoareTriplePure"></div></div>
+
+    <h3 id="bp-sign">Signatures: the honest-or-forged disjunction, in both directions</h3>
+    <div class="inv-cols">
+      <div><h5>invariants record (Sign)</h5><pre class="lean-static">label     := fun {sk, nonce, msg} rec tr => (rec msg) tr
+invariant := fun {sk, nonce, msg} rec tr =>
+  (rec sk) tr ∧ (rec nonce) tr ∧ (rec msg) tr ∧
+  ( (exists sk_usg, sk.HasUsage sk_usg tr ∧ sk_usg.type = "SigKey" ∧
+       SignPred.pred sk_usg (vk sk) msg tr ∧
+       (sk.label tr).canFlow (nonce.label tr) tr.erase ∧ True)
+  ∨ (sk.label tr).canFlow Label.pub tr.erase )</pre></div>
+      <div><h5>Hoare triples</h5><pre class="lean-static">HoareTriplePureGhost (sign sk nonce msg) (skUsg)
+  (fun tr => sk.Invariant tr ∧ nonce.Invariant tr ∧ msg.Invariant tr ∧
+             sk.HasUsage skUsg tr ∧ (sk.label tr).canFlow (nonce.label tr) tr.erase ∧
+             ((skUsg.type = "SigKey" ∧ SignPred.pred skUsg (vk sk) msg tr) ∨
+              (sk.label tr).canFlow Label.pub tr.erase))
+  (fun res tr => res.Invariant tr ∧ res.label tr = msg.label tr)
+
+HoareTriplePureGhost (verify vkey msg sig) (skUsg)
+  (fun tr => vkey.Invariant tr ∧ msg.Invariant tr ∧ sig.Invariant tr ∧
+             vkey.SignkeyHasUsage skUsg tr)
+  (fun res tr => res → ((skUsg.type = "SigKey" → SignPred.pred skUsg vkey msg tr) ∨
+                        (vkey.signkeyLabel tr).canFlow Label.pub tr.erase))</pre></div>
+    </div>
+    <p>The record's <code>exists sk_usg</code> is why signing needs a ghost: the triple names the witness, so the protocol's signing predicate can mention it. <code>verify</code> runs the record backwards: a valid signature with an invariant was produced by <code>sign</code>, its usage must be the key's usage, so either the signing predicate held or the key was public. Under <code>guard (verify …)</code>, a bridge instance plugs in <code>true</code>, and the implication becomes a plain hypothesis. Both ghosts can be found automatically: <code>signMetaprog</code> looks for <code>sk.HasUsage ?u</code> in the context and <code>verifyMetaprog</code> for <code>vkey.SignkeyHasUsage ?u</code>.</p>
+    <div class="cards"><div data-card="DY.Signature.Sign.invariants"></div><div data-card-at="DY/EquationalTheory/Sign.lean:628" data-label="sign's HoareTriplePureGhost (hygienic name)"></div><div data-card-at="DY/EquationalTheory/Sign.lean:696" data-label="verify's HoareTriplePureGhost (hygienic name)"></div><div data-card="DY.Signature.verify.Invariant"></div><div data-card="DY.Signature.signMetaprog"></div></div>
+
+    <h3 id="bp-small">Concat, literals and the KDFs</h3>
+    <table class="mech">
+      <thead><tr><th>operation</th><th>record says</th><th>Hoare triple</th></tr></thead>
+      <tbody>
+        <tr><td><code>literalToBytes</code></td><td>invariant <code>True</code>, label <code>pub</code></td><td>none in the library: the simp lemmas <code>literalToBytes.label</code> and <code>literalToBytes.Invariant</code> are used directly</td></tr>
+        <tr><td><code>concat lhs rhs</code></td><td>invariant of both halves, label <code>meet</code></td><td>none in the library. SignedDHKEM declares one locally, pre both invariants, post <code>res.label = lhs.label.meet rhs.label</code></td></tr>
+        <tr><td><code>split buf i</code></td><td>the halves inherit the invariant of <code>buf</code></td><td>none: it returns an <code>Option</code>, and its facts are <code>match</code>-shaped lemmas <code>split.Invariant</code> and <code>split.label</code></td></tr>
+        <tr><td><code>kdfExtract salt ikm</code></td><td>invariant of both, label <code>meet</code></td><td>pure: pre both invariants, post <code>res.label = salt.label.meet ikm.label</code></td></tr>
+        <tr><td><code>kdfExpand prk info len</code></td><td>label and usage chosen by the protocol's <code>KdfExpandInvariant</code> from <code>prk</code>'s usage</td><td>ghost: the ghost is <code>prk</code>'s usage, pre <code>prk.HasUsage prkUsage ∧ info.Publishable</code>, post the protocol's label up to equivalence and usage. No metaprogram: write <code>with ⟨ usg ⟩</code></td></tr>
+      </tbody>
+    </table>
+    <div class="cards"><div data-card="DY.Concat.split.Invariant"></div><div data-card="DY.Example.SignedDHKEM.instHoareTriplePureBytesConcatAndInvariantEqLabelLabelMeet_examples" data-label="concat's local triple in SignedDHKEM"></div><div data-card="DY.KdfExpand.instHoareTriplePureGhostBytesUsageKdfExpandAndInvariantHasUsagePublishableEquivalentLabelLabelEraseUsage" data-label="kdfExpand's HoareTriplePureGhost"></div></div>
+
+    <h3 id="bp-random">Random: a monadic triple</h3>
+    <div class="inv-cols">
+      <div><h5>invariants record</h5><pre class="lean-static">invariant := fun {timestamp, size} _rec tr =>
+  ∃ (label: Label) (usage: Usage),
+  tr.at? timestamp = some ({length := size, label, usage}: ProofEntryT)
+label := fun {timestamp, size := _} _rec tr =>
+  match (tr.at? timestamp: Option ProofEntryT) with
+  | some entry => entry.label
+  | none => Label.pub</pre></div>
+      <div><h5>Hoare triple</h5><pre class="lean-static">theorem genRand.spec (size) (label: Bytes → Label) (usage: Usage) :
+  HoareTripleGhost (genRand size) (label, usage)
+    (fun _ => True)
+    (fun res tr => res.Invariant tr ∧ res.label tr = label res ∧
+                   res.HasUsage usage tr)</pre></div>
+    </div>
+    <p>Random bytes are valid when their trace entry exists, and their label is whatever that entry recorded. <code>genRand</code> appends an entry carrying the ghost label applied to the fresh bytes, so the postcondition can promise <code>res.label = label res</code>. This one is proved with <code>step</code> itself, through <code>appendEntry.spec</code>.</p>
+    <div class="cards"><div data-card="DY.Random.genRand.spec"></div></div>
+
+    <h3 id="bp-kem">A user primitive: KEM</h3>
+    <p>SignedDHKEM's KEM follows the same pattern with explicitly named instances. The shapes show how a primitive's security assumption turns into preconditions:</p>
+    <pre class="lean-static">kemPk_hoareTriple    : HoareTriplePure (kemPk sk)
+  (fun tr => sk.Invariant tr ∧ (sk.label tr).canFlow (Broken.label (kemPk sk)) tr.erase)
+  (fun res tr => res.Invariant tr ∧ res.label tr = Label.pub)
+
+kemEncap_hoareTriple : HoareTriplePure (kemEncap pk entropy)
+  (fun tr => pk.Invariant tr ∧ entropy.Invariant tr ∧ (entropy.label tr).canFlow (pk.kemSkLabel tr) tr.erase)
+  (fun (cipher, ss) tr => cipher.Publishable tr ∧ ss.Invariant tr ∧ ss.label tr = entropy.label tr)
+
+kemDecap_hoareTriple : HoareTriple (kemDecap sk cipher)                 -- monadic: kemDecap returns Err Bytes
+  (fun tr => sk.Invariant tr ∧ cipher.Invariant tr)
+  (fun ss tr => kemDecap sk cipher = some ss ∧ ss.Invariant tr ∧ (ss.label tr).canFlow (sk.label tr) tr.erase)</pre>
+    <p>Encapsulation requires the entropy to be at least as secret as the recipient's key, and in return the ciphertext is public. Decapsulation runs that backwards: a valid ciphertext that decapsulates under <code>sk</code> carries entropy flowing to <code>sk</code>'s label.</p>
+    <div class="cards"><div data-card="DY.KEM.Encap.invariants"></div><div data-card="DY.KEM.kemEncap_hoareTriple"></div><div data-card="DY.KEM.kemDecap_hoareTriple"></div></div>
+  </section>
+
   <section id="random">
-    <h2>7 · Random bytes are a trace action</h2>
+    <h2>8 · Random bytes are a trace action</h2>
     <pre class="lean-static">structure Random (Bytes: Type) where
   timestamp: Nat
   size: Nat
@@ -194,13 +322,13 @@ def genRand (size: Nat) : Traceful Bytes := do
   </section>
 
   <section id="formats">
-    <h2>8 · Messages: literals and concat</h2>
+    <h2>9 · Messages: literals and concat</h2>
     <p><code>Literal</code> and <code>Concat</code> make <code>Bytes</code> a <code>Comparse.BytesLike</code>, the interface of the Comparse message-format library: <code>concat</code> and <code>split</code> become its concatenation and splitting, literals its byte arrays. Every structured message is then <code>serialize</code>d into length-prefixed concats and <code>parse</code>d back, with <code>parse_serialize_inv</code> as the round-trip law. On the trace page, Bob's message decodes to a 32-byte length prefix, <code>yPk</code>, and <code>sig</code>. Comparse also lifts invariants and publishability through formats, which is how <code>(serialize {yPk, sig}).Publishable</code> reduces to facts about the fields.</p>
     <div class="cards"><div data-card="DY.Comparse.instBytesLikeBytes"></div></div>
   </section>
 
   <section id="new">
-    <h2>9 · Adding a primitive</h2>
+    <h2>10 · Adding a primitive</h2>
     <p>SignedDHKEM's <code>KEM.lean</code> is a complete user-defined primitive. The recipe it follows:</p>
     <ol>
       <li>An API class: <code>kemPk</code>, <code>kemEncap pk entropy</code> returning a ciphertext and a shared secret, <code>kemDecap sk cipher</code>.</li>
